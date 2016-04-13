@@ -3,7 +3,8 @@
 from importlib import import_module
 import sys
 
-import docker_wrapper
+import utils
+import docker
 
 fabric_navitia_path = None
 for x in sys.path:
@@ -18,8 +19,8 @@ from fabric import api, operations, context_managers, tasks
 import fabfile
 
 
-with docker_wrapper.cd(fabric_navitia_path):
-    fabric_tasks = docker_wrapper.Command('fab toto').stdout_column(0, 2)
+with utils.cd(fabric_navitia_path):
+    fabric_tasks = utils.Command('fab no_such_task').stdout_column(0, 2)
 
 
 def get_fabric_task(task):
@@ -43,9 +44,10 @@ class FabricManager(object):
     """
     def __init__(self, platform):
         self.platform = platform
+        self.platform.register_manager('fabric', self)
 
     def get_hosts(self, raises=False):
-        self.hosts = {k: docker_wrapper.get_container_ip(v) for k, v in self.platform.containers.iteritems()}
+        self.hosts = {k: docker.get_container_ip(v) for k, v in self.platform.containers.iteritems()}
         if raises:
             found, expected = len(self.hosts), len(self.platform.containers)
             if found < expected:

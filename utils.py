@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import os
 import subprocess
 
+ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 @contextmanager
 def cd(folder):
@@ -12,6 +13,16 @@ def cd(folder):
         yield os.chdir(folder)
     finally:
         os.chdir(old_folder)
+
+
+def extract_column(text, column, start=0):
+    values = []
+    lines = text.splitlines()[start:]
+    for line in lines:
+        elts = line.split()
+        if elts and column < len(elts):
+            values.append(elts[column])
+    return values
 
 
 class Command(object):
@@ -24,19 +35,18 @@ class Command(object):
         self.returncode = p.returncode
 
     def stdout_column(self, column, start=0):
-        values = []
-        lines = self.stdout.split('\n')[start:]
-        for line in lines:
-            elts = line.split()
-            if elts and column < len(elts):
-                values.append(elts[column])
-        return values
+        return extract_column(self.stdout, column, start)
 
 
 def command(*args):
     """ Use this function if you only want the return code
     """
     return subprocess.call(*args)
+
+
+def ssh(user, host, cmd):
+    with cd(os.path.join(ROOTDIR)):
+        return Command('ssh -i images/keys/unsecure_key {user}@{host} {cmd}'.format(**locals())).stdout.strip()
 
 
 # this is a direct copy from fabric
