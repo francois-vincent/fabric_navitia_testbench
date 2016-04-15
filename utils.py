@@ -57,10 +57,10 @@ class Command(object):
         return extract_column(self.stdout, column, start)
 
 
-def command(*args):
+def command(cmd):
     """ Use this function if you only want the return code
     """
-    return subprocess.call(*args)
+    return subprocess.call(cmd, shell=True)
 
 
 def ssh(user, host, cmd):
@@ -72,4 +72,4 @@ def put(source, dest, user, host):
     """ source and dest must be absolute paths
     """
     with cd(os.path.join(ROOTDIR)):
-        command(('scp', '-i', 'images/keys/unsecure_key', source, '{user}@{host}:{dest}'.format(**locals())))
+        command(('scp -i images/keys/unsecure_key {source} {user}@{host}:{dest}'.format(**locals())))

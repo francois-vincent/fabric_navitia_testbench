@@ -37,22 +37,16 @@ def get_images(filter=None):
     return [x for x in docker_images]
 
 
-def containers_delete(containers):
-    for container in get_containers(containers):
-        print(utils.yellow("Delete container {}".format(container)))
-        return utils.command('docker', 'rm', container)
+def container_delete(container):
+    return utils.command('docker rm ' + container)
 
 
-def containers_stop(containers):
-    for container in get_containers(containers, all=False):
-        print(utils.yellow("Stop container {}".format(container)))
-        return utils.command('docker', 'stop', container)
+def container_stop(container):
+    return utils.command('docker stop ' + container)
 
 
-def images_delete(images):
-    for image in get_images(images):
-        print(utils.red("Delete image {}".format(image)))
-        return utils.command('docker', 'rmi', image)
+def image_delete(image):
+    return utils.command('docker rmi ' + image)
 
 
 def docker_build(context, image, tag=None):
@@ -80,7 +74,10 @@ def docker_start(container):
 
 
 def get_container_ip(container):
-    return utils.Command("docker inspect --format '{{ .NetworkSettings.IPAddress }}' %s" % container).stdout.strip()
+    cmd = utils.Command("docker inspect --format '{{ .NetworkSettings.IPAddress }}' %s" % container)
+    if cmd.stderr:
+        raise RuntimeError("Container {} is not running")
+    return cmd.stdout.strip()
 
 
 class PlatformManager(object):
@@ -113,12 +110,6 @@ class PlatformManager(object):
     def get_manager(self, name):
         return self.managers.get(name)
 
-    def get_real_images(self):
-        return get_images(self.images_names)
-
-    def get_real_containers(self, all=False):
-        return get_containers(self.containers_names, all)
-
     def setup(self, reset=None):
         """
         1- ensures images are created, otherwise, creates them
@@ -129,22 +120,28 @@ class PlatformManager(object):
         self.run_containers()
         return self
 
-    def reset(self, reset='all'):
-        if reset in ('all', 'containers'):
+    def reset(self, reset='rm_image'):
+        if reset in ('stop', 'rm_container', 'rm_image'):
             self.containers_stop()
+        if reset in ('rm_container', 'rm_image'):
             self.containers_delete()
-        if reset == 'all':
+        if reset == 'rm_image':
             self.images_delete()
         return self
 
-    def build_images(self):
+    def build_images(self, reset=None):
+        self.reset(reset)
         existing = self.get_real_images()
         for image in self.images_names:
             if image not in existing:
+                print(utils.yellow("Build image {}".format(image)))
                 docker_build(os.path.join(ROOTDIR, 'images'), image, image)
         return self
 
-    def run_containers(self):
+    def run_containers(self, reset=None):
+        if reset == 'rm_image':
+            raise RuntimeError("Can't remove images before running containers")
+        self.reset(reset)
         running = self.get_real_containers()
         existing = self.get_real_containers(True)
         for k, v in self.images.iteritems():
@@ -157,16 +154,28 @@ class PlatformManager(object):
                 docker_run(v, container, container, self.parameters.get(k))
         return self
 
+    def get_real_images(self):
+        return get_images(self.images_names)
+
+    def get_real_containers(self, all=False):
+        return get_containers(self.containers_names, all)
+
     def images_delete(self):
-        images_delete(self.images_names)
+        for image in self.get_real_images():
+            print(utils.red("Delete image {}".format(image)))
+            image_delete(image)
         return self
 
     def containers_stop(self):
-        containers_stop(get_containers(self.containers.values()))
+        for container in self.get_real_containers():
+            print(utils.yellow("Stop container {}".format(container)))
+            container_stop(container)
         return self
 
     def containers_delete(self):
-        containers_delete(get_containers(self.containers.values(), True))
+        for container in self.get_real_containers(True):
+            print(utils.yellow("Delete container {}".format(container)))
+            container_delete(container)
         return self
 
     def get_hosts(self, raises=False):
@@ -192,6 +201,14 @@ class PlatformManager(object):
         else:
             for host in self.containers.itervalues():
                 utils.put(source, dest, self.user, get_container_ip(host))
+        return self
+
+    def get_data(self, source, host=None):
+        return self.ssh('cat {}'.format(source), host)
+
+    def put_data(self, data, dest, host=None, append=False):
+        cmd = ' '.join('echo', data, '>>' if append else '>', dest)
+        self.ssh(cmd, host)
         return self
 
     def commit_containers(self):

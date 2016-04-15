@@ -2,7 +2,9 @@
 
 import os.path
 
-from ..docker import PlatformManager, ROOTDIR
+from fabric import api
+
+from ..docker import PlatformManager, ROOTDIR, get_container_ip
 from ..fabric_integration import FabricManager
 from ..utils import extract_column
 
@@ -31,6 +33,8 @@ def test_simple_image():
         issubset(set(extract_column(platform.ssh('ps -A', 'host'), -1, 1)))
     # check platform instantiation in fabric
     assert fabric.set_platform() is fabric
+    assert api.env.name == 'simple'
+    assert api.env.roledefs['tyr'] == ['root@' + get_container_ip('debian8_simple_host')]
     # check scp file transfer
     platform.ssh('mkdir /root/testdir')
     platform.put(os.path.join(ROOTDIR, 'tests', 'dummy.txt'), '/root/testdir')

@@ -18,7 +18,10 @@ def test_command():
     # then set up the fabric platform
     fabric.set_platform()
     # then deploy Navitia II on it
-    # fabric.execute("deploy_from_scratch")
+    fabric.execute("deploy_from_scratch")
+    # make sure that kraken_default is started
+    fabric.execute('component.kraken.restart_kraken', 'default', test=False)
+    time.sleep(2)
 
     # ---- tests
     # check that kraken is running
@@ -28,5 +31,5 @@ def test_command():
     time.sleep(1)
     assert platform.ssh('ps aux | grep kraken | grep -v grep', host='host') == ''
     fabric.execute('component.kraken.restart_kraken', 'default', test=False)
-    time.sleep(3)
+    time.sleep(2)
     assert extract_column(platform.ssh('ps aux | grep kraken | grep -v grep', host='host'), -1) == ['/srv/kraken/default/kraken']

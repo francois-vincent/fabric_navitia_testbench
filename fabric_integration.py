@@ -28,6 +28,8 @@ def get_fabric_task(task):
     if not fab_task:
         raise RuntimeError("Fabric task not found: {}".format(task))
     elif len(fab_task) > 1:
+        if len(fab_task) == 2 and task == fab_task[0]:
+            return fab_task[1]
         raise RuntimeError("Multiple Fabric tasks found for {}: {}, "
                            "please be more specific".format(task, fab_task))
     return fab_task[0]

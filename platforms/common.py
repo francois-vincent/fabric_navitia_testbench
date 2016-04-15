@@ -15,11 +15,11 @@ def env_common(tyr, ed, kraken, jormun):
     env.use_syslog = False
 
     env.roledefs = {
-        'tyr':  [tyr_ssh],
-        'tyr_master': [tyr_ssh],
+        'tyr':  [tyr_ssh] if isinstance(tyr_ssh, basestring) else tyr_ssh,
+        'tyr_master': [tyr_ssh] if isinstance(tyr_ssh, basestring) else [tyr_ssh[0]],
         'db':   [ed_ssh],
-        'eng':  [kraken_ssh],
-        'ws':   [jormun_ssh],
+        'eng':  [kraken_ssh] if isinstance(kraken_ssh, basestring) else kraken_ssh,
+        'ws':   [jormun_ssh] if isinstance(jormun_ssh, basestring) else jormun_ssh
     }
 
     env.excluded_instances = []
@@ -36,17 +36,9 @@ def env_common(tyr, ed, kraken, jormun):
     env.tyr_base_destination_dir = '/srv/ed/data/'
 
     env.jormungandr_url = jormun
-    env.kraken_monitor_base_url = kraken
 
     env.jormungandr_url_prefix = '/navitia'
 
     base_apache_conf = '/etc/apache2/conf.d' if env.distrib == 'debian7' else '/etc/apache2/conf-enabled'
     env.jormungandr_apache_config_file = os.path.join(base_apache_conf, 'jormungandr.conf')
     env.kraken_monitor_apache_config_file = os.path.join(base_apache_conf, 'monitor-kraken.conf')
-
-    # add your own custom configuration variables in file custom.py
-    # e.g. env.email
-    try:
-        import custom
-    except ImportError:
-        pass
