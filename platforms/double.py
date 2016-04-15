@@ -7,7 +7,7 @@ from common import env_common
 
 def double(host1, host2):
     env_common(host1, host1, [host1, host2], host1)
-    env.name = 'simple'
+    env.name = 'double'
 
     env.postgresql_database_host = 'localhost'
 

@@ -9,7 +9,7 @@ from ..fabric_integration import FabricManager
 from ..utils import extract_column
 
 
-def test_simple_image():
+def test_simple():
     # ---- setup
     # Create a platform with associated fabric manager
     platform = PlatformManager('simple', {'host': 'debian8'})

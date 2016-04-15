@@ -29,6 +29,6 @@ RUN echo "Include conf.d/" >> /etc/apache2/apache2.conf
 
 # Supervisord
 RUN apt-get install -y supervisor
-COPY debian8/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY debian8light/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 CMD ["/usr/bin/supervisord"]
