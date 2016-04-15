@@ -4,19 +4,16 @@ from importlib import import_module
 import sys
 
 import utils
-import docker
 
 fabric_navitia_path = None
 for x in sys.path:
-    if 'fabric_navitia' in x and 'fabric_navitia' == x.split('/')[-1]:
+    if 'fabric_navitia' in x and 'fabric_navitia' == [y for y in x.split('/') if y][-1]:
         fabric_navitia_path = x
         break
 if not fabric_navitia_path:
     raise RuntimeError("Could not find module 'fabric_navitia', please set PYTHONPATH accordingly")
 
-from fabric import api, operations, context_managers, tasks
-
-import fabfile
+from fabric import api
 
 
 with utils.cd(fabric_navitia_path):
@@ -26,9 +23,7 @@ with utils.cd(fabric_navitia_path):
 def get_fabric_task(task):
     fab_task = []
     for x in fabric_tasks:
-        if task == x:
-            return task
-        if task in x and x.split('.')[-1] in task:
+        if x.endswith(task):
             fab_task.append(x)
     if not fab_task:
         raise RuntimeError("Fabric task not found: {}".format(task))
@@ -36,6 +31,13 @@ def get_fabric_task(task):
         raise RuntimeError("Multiple Fabric tasks found for {}: {}, "
                            "please be more specific".format(task, fab_task))
     return fab_task[0]
+
+
+def get_task_description(task):
+    desc = '{}.{}'.format(task.__module__, task.name)
+    if desc.__doc__:
+        desc += ' [{}]'.format(task.__doc__.splitlines()[0])
+    return desc
 
 
 class FabricManager(object):
@@ -46,27 +48,25 @@ class FabricManager(object):
         self.platform = platform
         self.platform.register_manager('fabric', self)
 
-    def get_hosts(self, raises=False):
-        self.hosts = {k: docker.get_container_ip(v) for k, v in self.platform.containers.iteritems()}
-        if raises:
-            found, expected = len(self.hosts), len(self.platform.containers)
-            if found < expected:
-                raise RuntimeError("Expecting {} running containers, found {}".format(expected, found))
-        return self.hosts
-
     def set_platform(self):
-        module = import_module('platforms.' + self.platform.platform)
-        getattr(module, self.platform.platform)(**self.get_hosts(True))
+        module = import_module('.platforms.' + self.platform.platform, 'fabric_navitia_testbench')
+        getattr(module, self.platform.platform)(**self.platform.get_hosts(True))
+        if getattr(api.env, 'default_ssh_user'):
+            self.platform.user = api.env.default_ssh_user
         return self
 
-    def execute(self, cmd, *args):
-        fab_task = get_fabric_task(cmd)
-        if '.' in fab_task:
-            module, task = fab_task.rsplit('.', 1)
-            module = import_module('fabfile.' + module)
-            cmd = getattr(module, task)
-        else:
-            module = import_module('fabfile')
-            cmd = getattr(module, fab_task)
-        api.execute(cmd, *args)
+    def execute(self, task, *args, **kwargs):
+        fab_task = get_fabric_task(task)
+        try:
+            if '.' in fab_task:
+                module, task = fab_task.rsplit('.', 1)
+                module = import_module('fabfile.' + module)
+                cmd = getattr(module, task)
+            else:
+                module = import_module('fabfile')
+                cmd = getattr(module, fab_task)
+        except ImportError as e:
+            raise RuntimeError("Can't find task {} in fabfile {}/fabfile: [{}]".format(fab_task, fabric_navitia_path, e))
+        print(utils.magenta("Running task " + get_task_description(cmd)))
+        api.execute(cmd, *args, **kwargs)
         return self

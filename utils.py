@@ -6,6 +6,25 @@ import subprocess
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
+
+# this is a direct copy from fabric
+def _wrap_with(code):
+    def inner(text, bold=False):
+        c = code
+        if bold:
+            c = "1;%s" % c
+        return "\033[%sm%s\033[0m" % (c, text)
+    return inner
+
+red = _wrap_with('31')
+green = _wrap_with('32')
+yellow = _wrap_with('33')
+blue = _wrap_with('34')
+magenta = _wrap_with('35')
+cyan = _wrap_with('36')
+white = _wrap_with('37')
+
+
 @contextmanager
 def cd(folder):
     old_folder = os.getcwd()
@@ -49,20 +68,8 @@ def ssh(user, host, cmd):
         return Command('ssh -i images/keys/unsecure_key {user}@{host} {cmd}'.format(**locals())).stdout.strip()
 
 
-# this is a direct copy from fabric
-def _wrap_with(code):
-
-    def inner(text, bold=False):
-        c = code
-        if bold:
-            c = "1;%s" % c
-        return "\033[%sm%s\033[0m" % (c, text)
-    return inner
-
-red = _wrap_with('31')
-green = _wrap_with('32')
-yellow = _wrap_with('33')
-blue = _wrap_with('34')
-magenta = _wrap_with('35')
-cyan = _wrap_with('36')
-white = _wrap_with('37')
+def put(source, dest, user, host):
+    """ source and dest must be absolute paths
+    """
+    with cd(os.path.join(ROOTDIR)):
+        command(('scp', '-i', 'images/keys/unsecure_key', source, '{user}@{host}:{dest}'.format(**locals())))

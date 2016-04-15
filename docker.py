@@ -3,7 +3,7 @@
 from collections import Mapping
 import os
 
-from utils import Command, command, ssh, cd, yellow, red
+import utils
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -14,7 +14,7 @@ def get_containers(filter=None, all=True):
     :param all: if False, get only running containers, else get all containers.
     :return:
     """
-    docker_ps = Command('docker ps -a' if all else 'docker ps').stdout_column(-1, 1)
+    docker_ps = utils.Command('docker ps -a' if all else 'docker ps').stdout_column(-1, 1)
     if filter:
         if isinstance(filter, basestring):
             return [x for x in docker_ps if filter in x]
@@ -28,7 +28,7 @@ def get_images(filter=None):
     :param filter: if string, get images names containing it, if container, get images in this set.
     :return:
     """
-    docker_images = Command('docker images').stdout_column(0, 1)
+    docker_images = utils.Command('docker images').stdout_column(0, 1)
     if filter:
         if isinstance(filter, basestring):
             return [x for x in docker_images if filter in x]
@@ -39,27 +39,27 @@ def get_images(filter=None):
 
 def containers_delete(containers):
     for container in get_containers(containers):
-        print(yellow("Delete container {}".format(container)))
-        return command('docker', 'rm', container)
+        print(utils.yellow("Delete container {}".format(container)))
+        return utils.command('docker', 'rm', container)
 
 
 def containers_stop(containers):
     for container in get_containers(containers, all=False):
-        print(yellow("Stop container {}".format(container)))
-        return command('docker', 'stop', container)
+        print(utils.yellow("Stop container {}".format(container)))
+        return utils.command('docker', 'stop', container)
 
 
 def images_delete(images):
     for image in get_images(images):
-        print(red("Delete image {}".format(image)))
-        return command('docker', 'rmi', image)
+        print(utils.red("Delete image {}".format(image)))
+        return utils.command('docker', 'rmi', image)
 
 
 def docker_build(context, image, tag=None):
     cmd = 'docker build -f {}/Dockerfile{} .'.format(image, ' -t {}'.format(tag) if tag else '')
-    print(yellow(cmd))
-    with cd(context):
-        return Command(cmd).returncode
+    print(utils.yellow(cmd))
+    with utils.cd(context):
+        return utils.Command(cmd).returncode
 
 
 def docker_run(image, container=None, host=None, parameters=None):
@@ -71,16 +71,16 @@ def docker_run(image, container=None, host=None, parameters=None):
     if parameters:
         cmd += parameters + ' '
     cmd += image
-    print(yellow(cmd))
-    return Command(cmd).returncode
+    print(utils.yellow(cmd))
+    return utils.Command(cmd).returncode
 
 
 def docker_start(container):
-    return Command('docker start {}'.format(container)).returncode
+    return utils.Command('docker start {}'.format(container)).returncode
 
 
 def get_container_ip(container):
-    return Command("docker inspect --format '{{ .NetworkSettings.IPAddress }}' %s" % container).stdout.strip()
+    return utils.Command("docker inspect --format '{{ .NetworkSettings.IPAddress }}' %s" % container).stdout.strip()
 
 
 class PlatformManager(object):
@@ -90,13 +90,14 @@ class PlatformManager(object):
     then check existence or runs the containers.
     Optionally, stops and commits the containers.
     """
-    def __init__(self, platform, images, parameters=()):
+    def __init__(self, platform, images, parameters=(), user='root'):
         """
         :param platform: string
         :param images: dictionary/pair iterable of container-name:image
         :param parameters: dictionary/pair iterable of container-name:iterable of strings
         """
         self.platform = platform
+        self.user = user
         self.images = images if isinstance(images, Mapping) else dict(images)
         self.parameters = parameters if isinstance(parameters, Mapping) else dict(parameters)
         self.containers = {k: '_'.join((v, self.platform, k)) for k, v in self.images.iteritems()}
@@ -168,10 +169,30 @@ class PlatformManager(object):
         containers_delete(get_containers(self.containers.values(), True))
         return self
 
+    def get_hosts(self, raises=False):
+        """returns the dict(host, ip) of containers actually running, or raises
+           an exception if the number of running containers differs from the number
+           of defined containers.
+        """
+        self.hosts = {k: get_container_ip(v) for k, v in self.containers.iteritems()}
+        if raises:
+            found, expected = len(self.hosts), len(self.containers)
+            if found < expected:
+                raise RuntimeError("Expecting {} running containers, found {}".format(expected, found))
+        return self.hosts
+
     def ssh(self, cmd, host=None):
         if host:
-            return ssh('root', get_container_ip(self.containers[host]), cmd)
-        return {k: ssh('root', get_container_ip(v), cmd) for k, v in self.containers.iteritems()}
+            return utils.ssh(self.user, get_container_ip(self.containers[host]), cmd)
+        return {k: utils.ssh(self.user, get_container_ip(v), cmd) for k, v in self.containers.iteritems()}
+    
+    def put(self, source, dest, host=None):
+        if host:
+            utils.put(source, dest, self.user, get_container_ip(self.containers[host]))
+        else:
+            for host in self.containers.itervalues():
+                utils.put(source, dest, self.user, get_container_ip(host))
+        return self
 
     def commit_containers(self):
         """
@@ -179,8 +200,8 @@ class PlatformManager(object):
         """
         return self
 
-    def docker_diff(self, reference):
+    def docker_diff(self):
         """
-        check docker diff against an external reference
-        :param reference: string, a reference text to be checked
+        get docker diff
         """
+        # TODO this could only be useful if krakens could start automatically...

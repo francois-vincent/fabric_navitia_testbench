@@ -11,12 +11,13 @@ from fabric_integration import FabricManager
 def factory(
         image,
         platform,
-        command,
+        command='no',
+        hostname='host',
         reset='all'
 ):
-    images = {'host': image}
-    platform_obj = PlatformManager(platform, images)
+    platform_obj = PlatformManager(platform, {hostname: image})
     platform_obj.setup(reset)
     fabric = FabricManager(platform_obj)
-    fabric.set_platform().execute(command)
-    platform_obj.commit_containers()
+    if command != 'no':
+        fabric.set_platform().execute(command)
+        platform_obj.commit_containers()
