@@ -31,9 +31,8 @@ def test_simple():
     assert {'ps', 'sshd', 'supervisord', 'beam.smp', 'inet_gethost', 'su', 'apache2',
             'epmd', 'rabbitmq-server', 'sh', 'redis-server', 'postgres'}.\
         issubset(set(extract_column(platform.ssh('ps -A', 'host1'), -1, 1)))
-    assert {'ps', 'sshd', 'supervisord', 'beam.smp', 'inet_gethost', 'su', 'apache2',
-            'epmd', 'sh'}.\
-        issubset(set(extract_column(platform.ssh('ps -A', 'host1'), -1, 1)))
+    assert {'ps', 'sshd', 'supervisord', 'apache2'}.\
+        issubset(set(extract_column(platform.ssh('ps -A', 'host2'), -1, 1)))
     # check platform instantiation in fabric
     assert fabric.set_platform() is fabric
     # assert api.env.name == 'double'

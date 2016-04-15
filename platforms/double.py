@@ -16,7 +16,6 @@ def double(host1, host2):
     env.use_syslog = False
     env.rabbitmq_host = 'localhost'
 
-    # WARNING passwords should not contain special characters except star (*)
     add_instance("fr-nw", "passwd", zmq_socket_port=30006, is_free=True, zmq_server='localhost')
     add_instance("fr-ne-amiens", "passwd*", zmq_socket_port=30019, zmq_server=host2)
     add_instance("fr-idf", "passwd", zmq_socket_port=30002, is_free=True, zmq_server=host2)
