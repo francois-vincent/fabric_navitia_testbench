@@ -9,7 +9,7 @@ from ..fabric_integration import FabricManager
 from ..utils import extract_column
 
 
-def test_simple():
+def test_double():
     # ---- setup
     # Create a platform with associated fabric manager
     platform = PlatformManager('double', {'host1': 'debian8', 'host2': 'debian8light'})
@@ -35,7 +35,7 @@ def test_simple():
         issubset(set(extract_column(platform.ssh('ps -A', 'host2'), -1, 1)))
     # check platform instantiation in fabric
     assert fabric.set_platform() is fabric
-    # assert api.env.name == 'double'
+    assert api.env.name == 'double'
     assert api.env.roledefs['eng'] == ['root@' + get_container_ip('debian8_double_host1'),
                                        'root@' + get_container_ip('debian8light_double_host2')]
     # check scp file transfer
