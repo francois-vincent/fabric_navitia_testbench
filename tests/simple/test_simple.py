@@ -16,6 +16,9 @@ def test_container(platform):
     distri = platform.images.values()[0]
 
     # ---- tests
+    # check platform instantiation in fabric
+    assert api.env.name == 'simple'
+    assert api.env.roledefs['tyr'] == ['root@' + get_container_ip('{}_simple_host'.format(distri))]
     # Check there's a Debian8 ready image
     assert platform.get_real_images() == [distri]
     # Check there is a platform container running
@@ -26,10 +29,6 @@ def test_container(platform):
     assert {'ps', 'sshd', 'supervisord', 'beam.smp', 'inet_gethost', 'su', 'apache2',
             'epmd', 'rabbitmq-server', 'sh', 'redis-server', 'postgres'}.\
         issubset(set(extract_column(platform.ssh('ps -A', 'host'), -1, 1)))
-    # check platform instantiation in fabric
-    assert fabric.set_platform() is fabric
-    assert api.env.name == 'simple'
-    assert api.env.roledefs['tyr'] == ['root@' + get_container_ip('{}_simple_host'.format(distri))]
     # check scp file transfer
     platform.ssh('mkdir /root/testdir')
     platform.put(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
