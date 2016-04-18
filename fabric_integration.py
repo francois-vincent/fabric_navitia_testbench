@@ -37,7 +37,7 @@ def get_fabric_task(task):
 
 def get_task_description(task):
     desc = '{}.{}'.format(task.__module__, task.name)
-    if desc.__doc__:
+    if task.__doc__:
         desc += ' [{}]'.format(task.__doc__.splitlines()[0])
     return desc
 
@@ -70,5 +70,15 @@ class FabricManager(object):
         except ImportError as e:
             raise RuntimeError("Can't find task {} in fabfile {}/fabfile: [{}]".format(fab_task, fabric_navitia_path, e))
         print(utils.magenta("Running task " + get_task_description(cmd)))
-        api.execute(cmd, *args, **kwargs)
+        return api.execute(cmd, *args, **kwargs)
+
+    def get_version(self, role='eng'):
+        return self.execute('utils.get_version', role).values()[0]
+
+    def deploy_from_scratch(self):
+        for role in ('tyr', 'eng', 'ws'):
+            installed, candidate = self.get_version(role)
+            if not installed or installed != candidate:
+                self.execute("deploy_from_scratch")
+                break
         return self

@@ -1,28 +1,23 @@
 # encoding: utf-8
 
 import os.path
+import time
 
 from fabric import api
 
-from ..docker import PlatformManager, ROOTDIR, get_container_ip
-from ..fabric_integration import FabricManager
-from ..utils import extract_column
+from ...docker import ROOTDIR, get_container_ip
+from ...utils import extract_column
+
+ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def test_double():
-    # ---- setup
-    # Create a platform with associated fabric manager
-    platform = PlatformManager('double', {'host1': 'debian8', 'host2': 'debian8light'})
-    fabric = FabricManager(platform)
-
-    # build a debian8 image ready for Navitia2
-    platform.build_images()
-    # then run it
-    platform.run_containers()
+def test_containers(platform):
+    platform, fabric = platform
+    distris = platform.images.values()
 
     # ---- tests
     # Check the images are there
-    assert set(platform.get_real_images()) == {'debian8', 'debian8light'}
+    assert set(platform.get_real_images()) == set(distris)
     # Check the containers are running
     assert set(platform.get_real_containers()) == {'debian8_double_host1', 'debian8light_double_host2'}
     # Check I can ssh to it
@@ -40,6 +35,17 @@ def test_double():
                                        'root@' + get_container_ip('debian8light_double_host2')]
     # check scp file transfer
     platform.ssh('mkdir /root/testdir')
-    platform.put(os.path.join(ROOTDIR, 'tests', 'dummy.txt'), '/root/testdir')
+    platform.put(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
     assert platform.ssh('cat /root/testdir/dummy.txt') == {'host1': 'hello world', 'host2': 'hello world'}
     platform.ssh('rm -rf /root/testdir')
+
+
+def test_krakens(platform):
+    platform, fabric = platform
+
+    # ---- tests
+    # check that krakens are running
+    assert set(extract_column(platform.ssh('ps aux | grep kraken | grep -v grep', host='host1'), -1)) ==\
+           {'/srv/kraken/us-wa/kraken', '/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken'}
+    assert set(extract_column(platform.ssh('ps aux | grep kraken | grep -v grep', host='host2'), -1)) ==\
+           {'/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken', '/srv/kraken/fr-cen/kraken'}

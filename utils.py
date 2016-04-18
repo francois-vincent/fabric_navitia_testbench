@@ -65,11 +65,13 @@ def command(cmd):
 
 def ssh(user, host, cmd):
     with cd(os.path.join(ROOTDIR)):
-        return Command('ssh -i images/keys/unsecure_key {user}@{host} {cmd}'.format(**locals())).stdout.strip()
+        return Command('ssh -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
+                       '{user}@{host} {cmd}'.format(**locals())).stdout.strip()
 
 
 def put(source, dest, user, host):
     """ source and dest must be absolute paths
     """
     with cd(os.path.join(ROOTDIR)):
-        command(('scp -i images/keys/unsecure_key {source} {user}@{host}:{dest}'.format(**locals())))
+        command(('scp -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
+                 '{source} {user}@{host}:{dest}'.format(**locals())))
