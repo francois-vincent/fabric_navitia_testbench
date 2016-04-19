@@ -7,7 +7,7 @@ from ...docker import PlatformManager
 from ...fabric_integration import FabricManager
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def platform():
     # ---- setup
     # Create a platform with associated fabric manager
@@ -22,7 +22,7 @@ def platform():
     # then deploy Navitia on it
     fabric.deploy_from_scratch()
     # make sure that krakens are started
-    fabric.execute('component.kraken.restart_kraken', 'default', test=False)
+    fabric.execute('component.kraken.restart_all_krakens', wait=False)
     time.sleep(1)
 
     return platform, fabric

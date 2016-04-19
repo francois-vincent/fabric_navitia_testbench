@@ -7,7 +7,7 @@ from ...docker import PlatformManager
 from ...fabric_integration import FabricManager
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def platform():
     # ---- setup
     # Create a platform with associated fabric manager
