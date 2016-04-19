@@ -35,6 +35,12 @@ def cd(folder):
 
 
 def extract_column(text, column, start=0):
+    """ Extracts columns from a formatted text with blanks separated words
+    :param text:
+    :param column: the column number: from 0, -1 = last column
+    :param start: the line number to start with (headers removal)
+    :return: a list of words
+    """
     values = []
     lines = text.splitlines()[start:]
     for line in lines:
@@ -64,7 +70,7 @@ def command(cmd):
 
 
 def ssh(user, host, cmd):
-    with cd(os.path.join(ROOTDIR)):
+    with cd(ROOTDIR):
         return Command('ssh -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
                        '{user}@{host} {cmd}'.format(**locals())).stdout.strip()
 
@@ -72,6 +78,6 @@ def ssh(user, host, cmd):
 def put(source, dest, user, host):
     """ source and dest must be absolute paths
     """
-    with cd(os.path.join(ROOTDIR)):
+    with cd(ROOTDIR):
         command(('scp -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
                  '{source} {user}@{host}:{dest}'.format(**locals())))
