@@ -73,10 +73,10 @@ def docker_start(container):
     return utils.Command('docker start {}'.format(container)).returncode
 
 
-def get_container_ip(container):
+def get_container_ip(container, raises=False):
     cmd = utils.Command("docker inspect --format '{{ .NetworkSettings.IPAddress }}' %s" % container)
-    if cmd.stderr:
-        raise RuntimeError("Container {} is not running")
+    if raises and cmd.stderr:
+        raise RuntimeError("Container {} is not running".format(container))
     return cmd.stdout.strip()
 
 
@@ -97,7 +97,7 @@ class PlatformManager(object):
         self.user = user
         self.images = images if isinstance(images, Mapping) else dict(images)
         self.parameters = parameters if isinstance(parameters, Mapping) else dict(parameters)
-        self.containers = {k: '_'.join((v, self.platform, k)) for k, v in self.images.iteritems()}
+        self.containers = {k: '-'.join((v, self.platform, k)) for k, v in self.images.iteritems()}
         self.hosts = self.images.keys()
         self.images_names = set(self.images.values())
         self.containers_names = self.containers.values()
@@ -185,7 +185,8 @@ class PlatformManager(object):
         """
         self.hosts = {k: get_container_ip(v) for k, v in self.containers.iteritems()}
         if raises:
-            found, expected = len(self.hosts), len(self.containers)
+            expected = len(self.containers)
+            found = len([x for x in self.hosts.itervalues() if x])
             if found < expected:
                 raise RuntimeError("Expecting {} running containers, found {}".format(expected, found))
         return self.hosts

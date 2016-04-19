@@ -23,13 +23,13 @@ def test_simple():
     time.sleep(1)
     # then set up the fabric platform
     fabric.set_platform()
-    host_ip = get_container_ip('debian8_simple_host')
+    host_ip = get_container_ip('debian8-simple-host')
 
     # ---- tests
     # Check there's a debian8 image build
     assert platform.get_real_images() == platform.images.values()
     # check that container is started
-    assert platform.get_real_containers() == ['debian8_simple_host']
+    assert platform.get_real_containers() == ['debian8-simple-host']
     assert host_ip
     # check some platform instantiations in fabric
     assert api.env.name == 'simple'
@@ -58,14 +58,14 @@ def test_double():
     time.sleep(1)
     # then set up the fabric platform
     fabric.set_platform()
-    host1_ip = get_container_ip('debian8_double_host1')
-    host2_ip = get_container_ip('debian8light_double_host2')
+    host1_ip = get_container_ip('debian8-double-host1')
+    host2_ip = get_container_ip('debian8light-double-host2')
 
     # ---- tests
     # Check the images are there
     assert set(platform.get_real_images()) == {'debian8', 'debian8light'}
     # check that containers are started
-    assert set(platform.get_real_containers()) == {'debian8_double_host1', 'debian8light_double_host2'}
+    assert set(platform.get_real_containers()) == {'debian8-double-host1', 'debian8light-double-host2'}
     assert host1_ip
     assert host2_ip
     # check some platform instantiations in fabric
