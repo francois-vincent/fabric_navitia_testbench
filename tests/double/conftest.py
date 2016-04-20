@@ -10,11 +10,9 @@ from ...fabric_integration import FabricManager
 def pytest_addoption(parser):
     parser.addoption('--reset', action='store_true',
                      help="force reset images and containers (default: reuse existing images and containers")
-    parser.addoption('--dev', action='store_true',
-                     help="run only non decorated tests (default: run all tests")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def platform():
     # ---- setup
     # Create a platform with associated fabric manager

@@ -9,10 +9,10 @@ from ..common import get_running_krakens, skipifdev
 
 
 @skipifdev
-def test_stop_start_single_kraken(platform):
+def test_stop_restart_single_kraken(platform):
     platform, fabric = platform
     # make sure that krakens are started
-    fabric.execute('component.kraken.restart_all_krakens', wait=False)
+    fabric.execute('require_all_krakens_started')
     time.sleep(1)
 
     # check that kraken is running
@@ -27,10 +27,10 @@ def test_stop_start_single_kraken(platform):
 
 
 @skipifdev
-def test_stop_start_all_krakens(platform):
+def test_restart_all_krakens(platform):
     platform, fabric = platform
     # make sure that krakens are started
-    fabric.execute('component.kraken.restart_all_krakens', wait=False)
+    fabric.execute('require_all_krakens_started')
     time.sleep(1)
 
     # check that kraken is running
@@ -39,22 +39,59 @@ def test_stop_start_all_krakens(platform):
     fabric.execute('stop_kraken', 'default')
     time.sleep(1)
     assert get_running_krakens(platform, 'host') == []
-    fabric.execute('component.kraken.restart_all_krakens', wait=False)
+    fabric.execute('restart_all_krakens', wait=False)
     time.sleep(1)
     assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
 
 
+@skipifdev
+def test_stop_require_start_kraken(platform):
+    platform, fabric = platform
+    # make sure that krakens are started
+    fabric.execute('require_all_krakens_started')
+    time.sleep(1)
+
+    # check that kraken is running
+    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+    # stop kraken and check it
+    fabric.execute('stop_kraken', 'default')
+    time.sleep(1)
+    assert get_running_krakens(platform, 'host') == []
+    fabric.execute('require_kraken_started', 'default')
+    time.sleep(1)
+    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+
+
+@skipifdev
+def test_require_all_krakens_started(platform):
+    platform, fabric = platform
+    # make sure that krakens are started
+    fabric.execute('require_all_krakens_started')
+    time.sleep(1)
+
+    # check that kraken is running
+    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+    # stop kraken and check it
+    fabric.execute('stop_kraken', 'default')
+    time.sleep(1)
+    assert get_running_krakens(platform, 'host') == []
+    fabric.execute('require_all_krakens_started')
+    time.sleep(1)
+    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+
+
+@skipifdev
 def test_test_kraken_nowait_nofail(platform, capsys):
     platform, fabric = platform
     # make sure that krakens are started
-    fabric.execute('component.kraken.restart_all_krakens', wait=False)
+    fabric.execute('require_all_krakens_started')
     time.sleep(1)
 
     # check that kraken is running
     assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
 
     # test monitor-kraken request
-    assert fabric.execute('component.kraken.test_kraken', 'default', fail_if_error=False)
+    assert fabric.execute('test_kraken', 'default', fail_if_error=False).values()[0] is False
     out, err = capsys.readouterr()
     assert 'http://{}:80/monitor-kraken/?instance=default'.format(platform.get_hosts().values()[0]) in out
     assert "OK: instance default has correct values: {u'status': u'running', u'is_realtime_loaded': False, " \
@@ -63,3 +100,15 @@ def test_test_kraken_nowait_nofail(platform, capsys):
            "u'is_connected_to_rabbitmq': True}" in out
 
 
+@skipifdev
+def test_check_dead_instances(platform, capsys):
+    platform, fabric = platform
+    # make sure that krakens are started
+    fabric.execute('require_all_krakens_started')
+    time.sleep(1)
+
+    with pytest.raises(SystemExit):
+        fabric.execute('component.kraken.check_dead_instances')
+    out, err = capsys.readouterr()
+    assert 'http://{}:80/monitor-kraken/?instance=default'.format(platform.get_hosts().values()[0]) in out
+    assert 'The threshold of allowed dead instance is exceeded.There are 1 dead instances.' in out

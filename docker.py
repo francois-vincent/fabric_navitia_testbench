@@ -49,6 +49,16 @@ def image_delete(image):
     return utils.command('docker rmi ' + image)
 
 
+def image_delete_and_containers(image):
+    """ WARNING: This will remove an image and all its dependant containers
+    """
+    for container in utils.extract_column(utils.filter_column(utils.Command('docker ps').stdout, 1, eq=image), -1):
+        container_stop(container)
+    for container in utils.extract_column(utils.filter_column(utils.Command('docker ps -a').stdout, 1, eq=image), -1):
+        container_delete(container)
+    return image_delete(image)
+
+
 def docker_build(context, image, tag=None):
     cmd = 'docker build -f {}/Dockerfile{} .'.format(image, ' -t {}'.format(tag) if tag else '')
     print(utils.yellow(cmd))
@@ -93,6 +103,7 @@ class PlatformManager(object):
         :param images: dictionary/pair iterable of container-name:image
         :param parameters: dictionary/pair iterable of container-name:iterable of strings
         """
+        self.images_rootdir = ROOTDIR
         self.platform = platform
         self.user = user
         self.images = images if isinstance(images, Mapping) else dict(images)
@@ -121,6 +132,8 @@ class PlatformManager(object):
         return self
 
     def reset(self, reset='rm_image'):
+        if reset == 'uproot':
+            self.images_delete(uproot=True)
         if reset in ('stop', 'rm_container', 'rm_image'):
             self.containers_stop()
         if reset in ('rm_container', 'rm_image'):
@@ -135,7 +148,7 @@ class PlatformManager(object):
         for image in self.images_names:
             if image not in existing:
                 print(utils.yellow("Build image {}".format(image)))
-                docker_build(os.path.join(ROOTDIR, 'images'), image, image)
+                docker_build(os.path.join(self.images_rootdir, 'images'), image, image)
         return self
 
     def run_containers(self, reset=None):
@@ -160,10 +173,11 @@ class PlatformManager(object):
     def get_real_containers(self, all=False):
         return get_containers(self.containers_names, all)
 
-    def images_delete(self):
+    def images_delete(self, uproot=False):
+        func = image_delete_and_containers if uproot else image_delete
         for image in self.get_real_images():
             print(utils.red("Delete image {}".format(image)))
-            image_delete(image)
+            func(image)
         return self
 
     def containers_stop(self):
@@ -197,20 +211,20 @@ class PlatformManager(object):
         return {k: utils.ssh(self.user, get_container_ip(v), cmd) for k, v in self.containers.iteritems()}
     
     def put(self, source, dest, host=None):
-        if host:
-            utils.put(source, dest, self.user, get_container_ip(self.containers[host]))
-        else:
-            for host in self.containers.itervalues():
-                utils.put(source, dest, self.user, get_container_ip(host))
+        containers = [self.containers[host]] if host else self.containers.itervalues()
+        for container in containers:
+            utils.put(source, dest, self.user, get_container_ip(container))
+        return self
+
+    def put_data(self, data, dest, host=None, append=False):
+        if not append:
+            self.ssh('touch {}'.format(dest), host)
+        cmd = ''.join(('echo "', data, '" >>' if append else '" >', dest))
+        self.ssh(cmd, host)
         return self
 
     def get_data(self, source, host=None):
         return self.ssh('cat {}'.format(source), host)
-
-    def put_data(self, data, dest, host=None, append=False):
-        cmd = ' '.join('echo', data, '>>' if append else '>', dest)
-        self.ssh(cmd, host)
-        return self
 
     def commit_containers(self):
         """

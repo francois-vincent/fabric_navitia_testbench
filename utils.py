@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 from contextlib import contextmanager
-import os
+import os.path
 import subprocess
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
@@ -41,12 +41,35 @@ def extract_column(text, column, start=0):
     :param start: the line number to start with (headers removal)
     :return: a list of words
     """
+    lines = text.splitlines()[start:] if isinstance(text, basestring) else text[start:]
     values = []
-    lines = text.splitlines()[start:]
     for line in lines:
         elts = line.split()
         if elts and column < len(elts):
             values.append(elts[column])
+    return values
+
+
+def filter_column(text, column, **kwargs):
+    if len(kwargs) != 1:
+        raise TypeError("Missing or too many keyword parameter in filter_column")
+    op = kwargs.keys()[0]
+    value = kwargs.values()[0]
+    if op in ('eq', 'equals'):
+        op = '__eq__'
+    elif op in ('contains', 'includes'):
+        op = '__contains__'
+    elif not op in ('startswith', 'endswith'):
+        raise ValueError("Unknown filter_column operator: {}".format(op))
+    if isinstance(text, basestring):
+        text = text.splitlines()
+    values = []
+    for line in text:
+        elts = line.split()
+        if elts and column < len(elts):
+            elt = elts[column]
+            if getattr(elt, op)(value):
+                values.append(line.strip())
     return values
 
 
@@ -55,6 +78,7 @@ class Command(object):
     """
     def __init__(self, cmd):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.wait()
         self.stdout = p.stdout.read()
         self.stderr = p.stderr.read()
         self.returncode = p.returncode
@@ -65,6 +89,7 @@ class Command(object):
 
 def command(cmd):
     """ Use this function if you only want the return code
+        you can't retrieve stdout nor stdin
     """
     return subprocess.call(cmd, shell=True)
 
