@@ -6,6 +6,7 @@ import pytest
 from fabric import api
 
 from ..common import get_running_krakens, skipifdev
+from ...utils import extract_column
 
 
 @skipifdev
@@ -24,6 +25,22 @@ def test_stop_restart_single_kraken(platform):
     fabric.execute('component.kraken.restart_kraken', 'default', test=False)
     time.sleep(1)
     assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+
+
+# @skipifdev
+def test_stop_start_apache(platform):
+    platform, fabric = platform
+    # make sure that krakens are started
+    fabric.execute('require_all_krakens_started')
+    time.sleep(1)
+
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
+    platform.ssh('service apache2 stop')
+    time.sleep(1)
+    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
+    fabric.execute('require_monitor_kraken_started')
+    time.sleep(1)
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
 
 
 @skipifdev

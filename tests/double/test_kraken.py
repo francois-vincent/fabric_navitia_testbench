@@ -5,6 +5,7 @@ import time
 from fabric import api
 
 from ..common import get_running_krakens, skipifdev
+from ...utils import extract_column
 
 
 @skipifdev
@@ -35,6 +36,25 @@ def test_stop_start_single_kraken(platform):
            {'/srv/kraken/us-wa/kraken', '/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken'}
     assert set(get_running_krakens(platform, 'host2')) ==\
            {'/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken', '/srv/kraken/fr-cen/kraken'}
+
+
+# @skipifdev
+def test_stop_start_apache(platform):
+    platform, fabric = platform
+    # make sure that krakens are started
+    fabric.execute('require_all_krakens_started')
+    time.sleep(1)
+
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host1'), -1, 1)
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host2'), -1, 1)
+    platform.ssh('service apache2 stop')
+    time.sleep(1)
+    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host1'), -1, 1)
+    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host2'), -1, 1)
+    fabric.execute('require_monitor_kraken_started')
+    time.sleep(1)
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host1'), -1, 1)
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host2'), -1, 1)
 
 
 @skipifdev
