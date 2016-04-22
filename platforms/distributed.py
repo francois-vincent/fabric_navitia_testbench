@@ -5,11 +5,10 @@ from fabfile.instance import add_instance
 from common import env_common
 
 
-def double(host1, host2):
-    env_common(host1, host1, [host1, host2], host1)
-    env.name = 'double'
-
-    env.postgresql_database_host = 'localhost'
+def distributed(host1, host2):
+    env.host1_ip, env.host2_ip = host1, host2
+    env_common([host1], [host1], [host1, host2], [host1])
+    env.name = 'distributed'
 
     env.postgresql_database_host = 'localhost'
     env.use_zmq_socket_file = False

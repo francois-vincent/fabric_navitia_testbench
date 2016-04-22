@@ -3,13 +3,13 @@
 import pytest
 import time
 
-from ...docker import PlatformManager
-from ...fabric_integration import FabricManager
+from ..docker import PlatformManager
+from ..fabric_integration import FabricManager
 
 
 def pytest_addoption(parser):
-    parser.addoption('--distri', action='store', default='debian8',
-                     help="select a linux distribution (default debian8)")
+    parser.addoption('--dev', action='store_true',
+                     help="run only non decorated tests (default: run all tests")
     parser.addoption('--reset', action='store_true',
                      help="force reset images and containers (default: reuse existing images and containers")
 
@@ -18,7 +18,7 @@ def pytest_addoption(parser):
 def platform():
     # ---- setup
     # Create a platform with associated fabric manager
-    platform = PlatformManager('simple', {'host': pytest.config.getoption('--distri')})
+    platform = PlatformManager('duplicated', {'host1': 'debian8', 'host2': 'debian8light'})
     fabric = FabricManager(platform)
 
     # build a debian8 image ready for Navitia2, then run it

@@ -5,8 +5,15 @@ import pytest
 
 from fabric import api
 
-from ..common import get_running_krakens, skipifdev
-from ...utils import extract_column
+from ..tests.common import get_running_krakens, skipifdev
+from ..utils import extract_column, file_exists
+
+
+def test_kraken_setup(platform):
+    platform, fabric = platform
+    assert file_exists('/etc/init.d/kraken_default', api.env.host_ip)
+    assert file_exists('/etc/jormungandr.d/default.json', api.env.host_ip)
+    assert file_exists('/srv/kraken/default/kraken.ini', api.env.host_ip)
 
 
 @skipifdev
@@ -25,22 +32,6 @@ def test_stop_restart_single_kraken(platform):
     fabric.execute('component.kraken.restart_kraken', 'default', test=False)
     time.sleep(1)
     assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
-
-
-# @skipifdev
-def test_stop_start_apache(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
-    platform.ssh('service apache2 stop')
-    time.sleep(1)
-    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
-    fabric.execute('require_monitor_kraken_started')
-    time.sleep(1)
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
 
 
 @skipifdev
@@ -95,6 +86,21 @@ def test_require_all_krakens_started(platform):
     fabric.execute('require_all_krakens_started')
     time.sleep(1)
     assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+
+
+# @skipifdev
+def test_stop_start_apache(platform):
+    platform, fabric = platform
+    # make sure that krakens are started
+    fabric.execute('require_all_krakens_started')
+
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
+    platform.ssh('service apache2 stop')
+    time.sleep(1)
+    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
+    fabric.execute('require_monitor_kraken_started')
+    time.sleep(1)
+    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
 
 
 @skipifdev

@@ -9,17 +9,18 @@ SSH_KEY_FILE = os.path.join(ROOTDIR, '..', 'images', 'keys', 'unsecure_key')
 
 
 def env_common(tyr, ed, kraken, jormun):
+    env.hosts_tyr, env.hosts_ed, env.hosts_kraken, env.hosts_jormun = tyr, ed, kraken, jormun
     tyr_ssh, ed_ssh, kraken_ssh, jormun_ssh = env.make_ssh_url(tyr, ed, kraken, jormun)
     env.key_filename = SSH_KEY_FILE
     env.use_ssh_config = True
     env.use_syslog = False
 
     env.roledefs = {
-        'tyr':  [tyr_ssh] if isinstance(tyr_ssh, basestring) else tyr_ssh,
-        'tyr_master': [tyr_ssh] if isinstance(tyr_ssh, basestring) else [tyr_ssh[0]],
-        'db':   [ed_ssh],
-        'eng':  [kraken_ssh] if isinstance(kraken_ssh, basestring) else kraken_ssh,
-        'ws':   [jormun_ssh] if isinstance(jormun_ssh, basestring) else jormun_ssh
+        'tyr':  tyr_ssh,
+        'tyr_master': tyr_ssh[:1],
+        'db':   ed_ssh,
+        'eng':  kraken_ssh,
+        'ws':   jormun_ssh
     }
 
     env.excluded_instances = []

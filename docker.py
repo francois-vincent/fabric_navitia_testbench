@@ -92,7 +92,7 @@ def get_container_ip(container, raises=False):
 
 class PlatformManager(object):
     """
-    class in charge of bringing up a running platform and performing other docker magic
+    Class in charge of bringing up a running platform and performing other docker magic
     Check existence or creates the images,
     then check existence or runs the containers.
     Optionally, stops and commits the containers.
@@ -193,7 +193,7 @@ class PlatformManager(object):
         return self
 
     def get_hosts(self, raises=False):
-        """returns the dict(host, ip) of containers actually running, or raises
+        """ Returns the dict(host, ip) of containers actually running, or raises
            an exception if the number of running containers differs from the number
            of defined containers.
         """
