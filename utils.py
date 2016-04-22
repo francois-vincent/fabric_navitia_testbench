@@ -4,9 +4,6 @@ from contextlib import contextmanager
 import os.path
 import subprocess
 
-from fabric import api
-from fabric.contrib import files
-
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -107,15 +104,15 @@ def put(source, dest, user, host):
     """ source and dest must be absolute paths
     """
     with cd(ROOTDIR):
-        command(('scp -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
-                 '{source} {user}@{host}:{dest}'.format(**locals())))
+        command('scp -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
+                 '{source} {user}@{host}:{dest}'.format(**locals()))
 
 
-def file_exists(path, hosts):
+def file_exists(path, user, hosts):
     if isinstance(hosts, basestring):
         hosts = [hosts]
     for host in hosts:
-        with api.settings(host_string=api.env.make_ssh_url(host)):
-            if not files.exists(path, verbose=True):
-                return False
+        if command('ssh -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
+                 '{user}@{host} test -e "{path}"'.format(**locals())):
+            return False
     return True

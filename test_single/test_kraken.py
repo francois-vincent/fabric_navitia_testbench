@@ -11,9 +11,9 @@ from ..utils import extract_column, file_exists
 
 def test_kraken_setup(platform):
     platform, fabric = platform
-    assert file_exists('/etc/init.d/kraken_default', api.env.host_ip)
-    assert file_exists('/etc/jormungandr.d/default.json', api.env.host_ip)
-    assert file_exists('/srv/kraken/default/kraken.ini', api.env.host_ip)
+    assert file_exists('/etc/init.d/kraken_default', platform.user, api.env.host_ip)
+    assert file_exists('/etc/jormungandr.d/default.json', platform.user, api.env.host_ip)
+    assert file_exists('/srv/kraken/default/kraken.ini', platform.user, api.env.host_ip)
 
 
 @skipifdev

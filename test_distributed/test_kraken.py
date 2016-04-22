@@ -11,13 +11,13 @@ from ..utils import extract_column, file_exists
 def test_kraken_setup(platform):
     platform, fabric = platform
     for krak in ('us-wa', 'fr-nw', 'fr-npdc'):
-        assert file_exists('/etc/init.d/kraken_{}'.format(krak), api.env.host1_ip)
-        assert file_exists('/etc/jormungandr.d/{}.json'.format(krak), api.env.host1_ip)
-        assert file_exists('/srv/kraken/{}/kraken.ini'.format(krak), api.env.host1_ip)
+        assert file_exists('/etc/init.d/kraken_{}'.format(krak), platform.user, api.env.host1_ip)
+        assert file_exists('/etc/jormungandr.d/{}.json'.format(krak), platform.user, api.env.host1_ip)
+        assert file_exists('/srv/kraken/{}/kraken.ini'.format(krak), platform.user, api.env.host1_ip)
     for krak in ('fr-ne-amiens', 'fr-idf', 'fr-cen'):
-        assert file_exists('/etc/init.d/kraken_{}'.format(krak), api.env.host2_ip)
-        assert file_exists('/etc/jormungandr.d/{}.json'.format(krak), api.env.host1_ip)
-        assert file_exists('/srv/kraken/{}/kraken.ini'.format(krak), api.env.host2_ip)
+        assert file_exists('/etc/init.d/kraken_{}'.format(krak), platform.user, api.env.host2_ip)
+        assert file_exists('/etc/jormungandr.d/{}.json'.format(krak), platform.user, api.env.host1_ip)
+        assert file_exists('/srv/kraken/{}/kraken.ini'.format(krak), platform.user, api.env.host2_ip)
 
 
 @skipifdev

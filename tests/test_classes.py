@@ -7,7 +7,7 @@ from .common import skipifdev
 from ..docker import PlatformManager, container_stop
 from ..docker import ROOTDIR as DOCKER_ROOTDIR
 from ..fabric_integration import FabricManager
-from ..utils import cd, extract_column, filter_column, command, Command
+from ..utils import cd, extract_column, filter_column, command, Command, file_exists
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -136,12 +136,16 @@ def test_ssh():
     assert platform.ssh('pwd', host='host1') == '/root'
 
 
-@skipifdev
-def test_put():
+# @skipifdev
+def test_put_file_exists():
     platform = PlatformManager('test', {'host1': 'testimage', 'host2': 'testimage'}).build_images().run_containers()
     platform.ssh('mkdir /root/testdir')
     platform.put(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
     assert platform.ssh('cat /root/testdir/dummy.txt') == {'host1': 'hello world', 'host2': 'hello world'}
+    assert file_exists('/root/testdir/dummy.txt', 'root', platform.get_hosts().values())
+    platform.ssh('rm -f /root/testdir/dummy.txt', 'host1')
+    assert file_exists('/root/testdir/dummy.txt', 'root', platform.get_hosts()['host2'])
+    assert not file_exists('/root/testdir/dummy.txt', 'root', platform.get_hosts()['host1'])
 
 
 # def test_put_get_data():
