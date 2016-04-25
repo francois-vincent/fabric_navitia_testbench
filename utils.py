@@ -125,7 +125,7 @@ def file_exists(path, user, hosts):
     return True
 
 
-# ======================= TEST RELATED UTILITIES =======================
+# =================== REMOTE HOSTS RELATED UTILITIES =======================
 
 pattern = re.compile('/srv/kraken/(.+?)/kraken')
 
