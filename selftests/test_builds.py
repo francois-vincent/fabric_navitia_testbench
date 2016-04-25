@@ -25,7 +25,7 @@ def test_single():
     fabric.set_platform()
     host_ip = get_container_ip('debian8-single-host')
 
-    # ---- tests
+    # ---- selftests
     # Check there's a debian8 image build
     assert platform.get_real_images() == platform.images.values()
     # check that container is started
@@ -61,7 +61,7 @@ def test_dual():
     host1_ip = get_container_ip('debian8-distributed-host1')
     host2_ip = get_container_ip('debian8light-distributed-host2')
 
-    # ---- tests
+    # ---- selftests
     # Check the images are there
     assert set(platform.get_real_images()) == {'debian8', 'debian8light'}
     # check that containers are started

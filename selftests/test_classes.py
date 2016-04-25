@@ -3,11 +3,11 @@
 import os.path
 import pytest
 
-from .common import skipifdev
 from ..docker import PlatformManager, container_stop
 from ..docker import ROOTDIR as DOCKER_ROOTDIR
 from ..fabric_integration import FabricManager
 from ..utils import cd, extract_column, filter_column, command, Command, file_exists
+from ..test_common import skipifdev
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 

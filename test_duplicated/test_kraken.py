@@ -1,11 +1,13 @@
 # encoding: utf-8
 
-import time
-
 from fabric import api
 
-from ..tests.common import get_running_krakens, skipifdev
-from ..utils import extract_column, file_exists
+from ..utils import file_exists
+from ..test_common import skipifdev
+from ..test_common.test_kraken import (_test_stop_restart_kraken,
+                                       _test_stop_start_apache,
+                                       _test_test_kraken_nowait_nofail
+                                       )
 
 
 def test_kraken_setup(platform):
@@ -16,132 +18,58 @@ def test_kraken_setup(platform):
         assert file_exists('/srv/kraken/{}/kraken.ini'.format(krak), platform.user, api.env.hosts_kraken)
 
 
-@skipifdev
-def test_stop_start_single_kraken(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that krakens are running
-    krakens = {'/srv/kraken/{}/kraken'.format(krak) for krak in api.env.instances}
-    assert set(get_running_krakens(platform, 'host1')) == krakens
-    assert set(get_running_krakens(platform, 'host2')) == krakens
-    # stop 2 krakens and check them
-    fabric.execute('stop_kraken', 'us-wa')
-    fabric.execute('stop_kraken', 'fr-cen')
-    time.sleep(1)
-    assert set(get_running_krakens(platform, 'host1')) ==\
-           {'/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken',
-            '/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken'}
-    assert set(get_running_krakens(platform, 'host2')) ==\
-           {'/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken',
-            '/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken'}
-    # restart these krakens and check them
-    fabric.execute('component.kraken.restart_kraken', 'us-wa', test=False)
-    fabric.execute('component.kraken.restart_kraken', 'fr-cen', test=False)
-    time.sleep(1)
-    assert set(get_running_krakens(platform, 'host1')) == krakens
-    assert set(get_running_krakens(platform, 'host2')) == krakens
+nominal_krakens = {'host1': {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'},
+                   'host2': {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'}}
+krakens_after_stop = {'host1': {'fr-nw', 'fr-npdc', 'fr-idf', 'fr-cen'},
+                      'host2': {'fr-nw', 'fr-npdc', 'fr-idf', 'fr-cen'}}
 
 
-@skipifdev
+# @skipifdev
+def test_stop_restart_single_kraken(platform):
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                             start_pat=('component.kraken.restart_kraken', ('us-wa', 'fr-ne-amiens'), dict(test=False))
+                             )
+
+
+# @skipifdev
+def test_restart_all_krakens(platform):
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                             start_pat=('restart_all_krakens', (), dict(wait=False))
+                             )
+
+
+# @skipifdev
+def test_stop_require_start_kraken(platform):
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                             start_pat=('require_kraken_started', ('us-wa', 'fr-ne-amiens'), {}),
+                             )
+
+
+# @skipifdev
 def test_require_all_krakens_started(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that krakens are running
-    krakens = {'/srv/kraken/{}/kraken'.format(krak) for krak in api.env.instances}
-    assert set(get_running_krakens(platform, 'host1')) == krakens
-    assert set(get_running_krakens(platform, 'host2')) == krakens
-    # stop 2 krakens and check them
-    fabric.execute('stop_kraken', 'us-wa')
-    fabric.execute('stop_kraken', 'fr-cen')
-    time.sleep(1)
-    assert set(get_running_krakens(platform, 'host1')) ==\
-           {'/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken',
-            '/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken'}
-    assert set(get_running_krakens(platform, 'host2')) ==\
-           {'/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken',
-            '/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken'}
-    # restart these krakens and check them
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-    assert set(get_running_krakens(platform, 'host1')) == krakens
-    assert set(get_running_krakens(platform, 'host2')) == krakens
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                             start_pat=('require_all_krakens_started', (), {}),
+                             )
 
 
-@skipifdev
-def test_stop_restart_all_krakens(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that krakens are running
-    krakens = {'/srv/kraken/{}/kraken'.format(krak) for krak in api.env.instances}
-    assert set(get_running_krakens(platform, 'host1')) == krakens
-    assert set(get_running_krakens(platform, 'host2')) == krakens
-    # stop 2 krakens and check them
-    fabric.execute('stop_kraken', 'us-wa')
-    fabric.execute('stop_kraken', 'fr-cen')
-    time.sleep(1)
-    assert set(get_running_krakens(platform, 'host1')) ==\
-           {'/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken',
-            '/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken'}
-    assert set(get_running_krakens(platform, 'host2')) ==\
-           {'/srv/kraken/fr-nw/kraken', '/srv/kraken/fr-npdc/kraken',
-            '/srv/kraken/fr-ne-amiens/kraken', '/srv/kraken/fr-idf/kraken'}
-    # restart these krakens and check them
-    fabric.execute('restart_all_krakens', wait=False)
-    time.sleep(1)
-    assert set(get_running_krakens(platform, 'host1')) == krakens
-    assert set(get_running_krakens(platform, 'host2')) == krakens
-
-
-@skipifdev
+# @skipifdev
 def test_stop_start_apache(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host1'), -1, 1)
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host2'), -1, 1)
-    platform.ssh('service apache2 stop')
-    time.sleep(1)
-    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host1'), -1, 1)
-    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host2'), -1, 1)
-    fabric.execute('require_monitor_kraken_started')
-    time.sleep(1)
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host1'), -1, 1)
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host2'), -1, 1)
+    _test_stop_start_apache(platform, ('host1', 'host2'))
 
 
-@skipifdev
-def test_test_kraken(platform, capsys):
-    platform, fabric = platform
-    hosts = platform.get_hosts()
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that krakens are running
-    krakens = {'/srv/kraken/{}/kraken'.format(krak) for krak in api.env.instances}
-    assert set(get_running_krakens(platform, 'host1')) == krakens
-    assert set(get_running_krakens(platform, 'host2')) == krakens
-
-    # test monitor-kraken request
-    assert fabric.execute('component.kraken.test_kraken', 'us-wa', fail_if_error=False).values()[0] is None
-    out, err = capsys.readouterr()
-    assert 'http://{}:80/monitor-kraken/?instance=us-wa'.format(hosts['host1']) in out
-    assert 'http://{}:80/monitor-kraken/?instance=us-wa'.format(hosts['host2']) in out
-    assert fabric.execute('component.kraken.test_kraken', 'fr-cen', fail_if_error=False).values()[0] is None
-    out, err = capsys.readouterr()
-    assert 'http://{}:80/monitor-kraken/?instance=fr-cen'.format(hosts['host1']) in out
-    assert 'http://{}:80/monitor-kraken/?instance=fr-cen'.format(hosts['host2']) in out
-    assert "OK: instance fr-cen has correct values: {u'status': u'running', u'is_realtime_loaded': False, " \
-           "u'start_production_date': u'', u'last_load': u'not-a-date-time', u'end_production_date': u'', " \
-           "u'loaded': False, u'publication_date': u'', u'last_load_status': True, " \
-           "u'is_connected_to_rabbitmq': True}" in out
+# @skipifdev
+def test_test_kraken_nowait_nofail(platform, capsys):
+    _test_test_kraken_nowait_nofail(platform, capsys,
+                                    map={'host1': {'us-wa'}, 'host2': {'fr-ne-amiens'}}, ret_val=None)

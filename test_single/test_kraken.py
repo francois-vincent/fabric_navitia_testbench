@@ -5,8 +5,12 @@ import pytest
 
 from fabric import api
 
-from ..tests.common import get_running_krakens, skipifdev
-from ..utils import extract_column, file_exists
+from ..utils import file_exists
+from ..test_common import skipifdev
+from ..test_common.test_kraken import (_test_stop_restart_kraken,
+                                       _test_stop_start_apache,
+                                       _test_test_kraken_nowait_nofail
+                                       )
 
 
 def test_kraken_setup(platform):
@@ -16,114 +20,61 @@ def test_kraken_setup(platform):
     assert file_exists('/srv/kraken/default/kraken.ini', platform.user, api.env.host_ip)
 
 
-@skipifdev
+nominal_krakens = {'host': {'default'}}
+krakens_after_stop = {'host': set()}
+
+
+# @skipifdev
 def test_stop_restart_single_kraken(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that kraken is running
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
-    # stop kraken and check it
-    fabric.execute('stop_kraken', 'default')
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == []
-    fabric.execute('component.kraken.restart_kraken', 'default', test=False)
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('default',)),
+                             start_pat=('component.kraken.restart_kraken', ('default',), dict(test=False))
+                             )
 
 
-@skipifdev
+# @skipifdev
 def test_restart_all_krakens(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that kraken is running
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
-    # stop kraken and check it
-    fabric.execute('stop_kraken', 'default')
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == []
-    fabric.execute('restart_all_krakens', wait=False)
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('default',)),
+                             start_pat=('restart_all_krakens', (), dict(wait=False))
+                             )
 
 
-@skipifdev
+# @skipifdev
 def test_stop_require_start_kraken(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that kraken is running
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
-    # stop kraken and check it
-    fabric.execute('stop_kraken', 'default')
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == []
-    fabric.execute('require_kraken_started', 'default')
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('default',)),
+                             start_pat=('require_kraken_started', ('default',), {}),
+                             )
 
 
-@skipifdev
+# @skipifdev
 def test_require_all_krakens_started(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that kraken is running
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
-    # stop kraken and check it
-    fabric.execute('stop_kraken', 'default')
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == []
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
+    _test_stop_restart_kraken(platform,
+                             map_start=nominal_krakens,
+                             map_stop=krakens_after_stop,
+                             stop_pat=('stop_kraken', ('default',)),
+                             start_pat=('require_all_krakens_started', (), {}),
+                             )
 
 
 # @skipifdev
 def test_stop_start_apache(platform):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
-    platform.ssh('service apache2 stop')
-    time.sleep(1)
-    assert 'apache2' not in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
-    fabric.execute('require_monitor_kraken_started')
-    time.sleep(1)
-    assert 'apache2' in extract_column(platform.ssh('ps -A', 'host'), -1, 1)
+    _test_stop_start_apache(platform, ('host',))
 
 
-@skipifdev
+# @skipifdev
 def test_test_kraken_nowait_nofail(platform, capsys):
-    platform, fabric = platform
-    # make sure that krakens are started
-    fabric.execute('require_all_krakens_started')
-    time.sleep(1)
-
-    # check that kraken is running
-    assert get_running_krakens(platform, 'host') == ['/srv/kraken/default/kraken']
-
-    # test monitor-kraken request
-    assert fabric.execute('test_kraken', 'default', fail_if_error=False).values()[0] is False
-    out, err = capsys.readouterr()
-    assert 'http://{}:80/monitor-kraken/?instance=default'.format(platform.get_hosts().values()[0]) in out
-    assert "OK: instance default has correct values: {u'status': u'running', u'is_realtime_loaded': False, " \
-           "u'start_production_date': u'', u'last_load': u'not-a-date-time', u'end_production_date': u'', " \
-           "u'loaded': False, u'publication_date': u'', u'last_load_status': True, " \
-           "u'is_connected_to_rabbitmq': True}" in out
+    _test_test_kraken_nowait_nofail(platform, capsys, map={'host': {'default'}}, ret_val=False)
 
 
-@skipifdev
+# @skipifdev
 def test_check_dead_instances(platform, capsys):
     platform, fabric = platform
     # make sure that krakens are started

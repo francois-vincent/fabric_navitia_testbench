@@ -27,6 +27,6 @@ def platform():
     # then set up the fabric platform
     fabric.set_platform()
     # then deploy Navitia on it
-    fabric.deploy_from_scratch()
+    fabric.deploy_from_scratch(pytest.config.getoption('--reset'))
 
     return platform, fabric

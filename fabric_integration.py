@@ -29,7 +29,7 @@ def get_fabric_task(task):
         raise RuntimeError("Fabric task not found: {}".format(task))
     elif len(fab_task) > 1:
         if len(fab_task) == 2 and task == fab_task[0]:
-            return fab_task[1]
+            return fab_task[0]
         raise RuntimeError("Multiple Fabric tasks found for {}: {}, "
                            "please be more specific".format(task, fab_task))
     return fab_task[0]
@@ -75,7 +75,10 @@ class FabricManager(object):
     def get_version(self, role='eng'):
         return self.execute('utils.get_version', role).values()[0]
 
-    def deploy_from_scratch(self):
+    def deploy_from_scratch(self, force=False):
+        if force:
+            self.execute("deploy_from_scratch")
+            return self
         for role in ('tyr', 'eng', 'ws'):
             installed, candidate = self.get_version(role)
             if not installed or installed != candidate:

@@ -36,7 +36,7 @@ def env_common(tyr, ed, kraken, jormun):
     env.tyr_source_dir_template = '/srv/ed/data/{instance}'
     env.tyr_base_destination_dir = '/srv/ed/data/'
 
-    env.jormungandr_url = jormun
+    # env.jormungandr_url = jormun
 
     env.jormungandr_url_prefix = '/navitia'
 

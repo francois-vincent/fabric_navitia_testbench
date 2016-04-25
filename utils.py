@@ -2,36 +2,13 @@
 
 from contextlib import contextmanager
 import os.path
+import re
 import subprocess
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 
-# this is a direct copy from fabric
-def _wrap_with(code):
-    def inner(text, bold=False):
-        c = code
-        if bold:
-            c = "1;%s" % c
-        return "\033[%sm%s\033[0m" % (c, text)
-    return inner
-
-red = _wrap_with('31')
-green = _wrap_with('32')
-yellow = _wrap_with('33')
-blue = _wrap_with('34')
-magenta = _wrap_with('35')
-cyan = _wrap_with('36')
-white = _wrap_with('37')
-
-
-@contextmanager
-def cd(folder):
-    old_folder = os.getcwd()
-    try:
-        yield os.chdir(folder)
-    finally:
-        os.chdir(old_folder)
+# ======================= GENERAL UTILILITIES =======================
 
 
 def extract_column(text, column, start=0):
@@ -71,6 +48,36 @@ def filter_column(text, column, **kwargs):
             if getattr(elt, op)(value):
                 values.append(line.strip())
     return values
+
+
+# ======================= OS RELATED UTILITIES =======================
+
+
+# this is a direct copy from fabric
+def _wrap_with(code):
+    def inner(text, bold=False):
+        c = code
+        if bold:
+            c = "1;%s" % c
+        return "\033[%sm%s\033[0m" % (c, text)
+    return inner
+
+red = _wrap_with('31')
+green = _wrap_with('32')
+yellow = _wrap_with('33')
+blue = _wrap_with('34')
+magenta = _wrap_with('35')
+cyan = _wrap_with('36')
+white = _wrap_with('37')
+
+
+@contextmanager
+def cd(folder):
+    old_folder = os.getcwd()
+    try:
+        yield os.chdir(folder)
+    finally:
+        os.chdir(old_folder)
 
 
 class Command(object):
@@ -116,3 +123,13 @@ def file_exists(path, user, hosts):
                  '{user}@{host} test -e "{path}"'.format(**locals())):
             return False
     return True
+
+
+# ======================= TEST RELATED UTILITIES =======================
+
+pattern = re.compile('/srv/kraken/(.+?)/kraken')
+
+
+def get_running_krakens(platform, host):
+    cols = extract_column(platform.ssh('ps aux | grep kraken | grep -v grep', host=host), -1)
+    return [pattern.findall(col)[0] for col in cols]
