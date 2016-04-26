@@ -124,6 +124,14 @@ def put_file(source, dest, container, user=None, perms=None):
     pass
 
 
+def get_version(app, container):
+    text = docker_exec(container, 'apt-cache policy {}'.format(app), user='root')
+    try:
+        return utils.extract_column(utils.filter_column(text, 0, startswith='Install'), 1, sep=':')[0]
+    except IndexError:
+        return None
+
+
 class PlatformManager(object):
     """
     Class in charge of bringing up a running platform and performing other docker magic
@@ -296,6 +304,11 @@ class PlatformManager(object):
             if not path_exists(path, container):
                 return False
         return True
+
+    def get_version(self, app, host=None):
+        if host:
+            return get_version(app, self.containers[host])
+        return {k: get_version(app, v) for k, v in self.containers.iteritems()}
 
     def commit_containers(self):
         """

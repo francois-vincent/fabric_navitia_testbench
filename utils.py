@@ -11,27 +11,28 @@ ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 # ======================= GENERAL UTILILITIES =======================
 
 
-def extract_column(text, column, start=0):
+def extract_column(text, column, start=0, sep=None):
     """ Extracts columns from a formatted text with blanks separated words
     :param text:
     :param column: the column number: from 0, -1 = last column
     :param start: the line number to start with (headers removal)
     :return: a list of words
     """
-    lines = text.splitlines()[start:] if isinstance(text, basestring) else text[start:]
+    lines = text.splitlines() if isinstance(text, basestring) else text
+    if start:
+        lines = lines[start:]
     values = []
     for line in lines:
-        elts = line.split()
+        elts = line.split(sep) if sep else line.split()
         if elts and column < len(elts):
-            values.append(elts[column])
+            values.append(elts[column].strip())
     return values
 
 
-def filter_column(text, column, **kwargs):
+def filter_column(text, column, sep=None, **kwargs):
     if len(kwargs) != 1:
         raise TypeError("Missing or too many keyword parameter in filter_column")
-    op = kwargs.keys()[0]
-    value = kwargs.values()[0]
+    op, value = kwargs.items()[0]
     if op in ('eq', 'equals'):
         op = '__eq__'
     elif op in ('contains', 'includes'):
@@ -42,7 +43,7 @@ def filter_column(text, column, **kwargs):
         text = text.splitlines()
     values = []
     for line in text:
-        elts = line.split()
+        elts = line.split(sep) if sep else line.split()
         if elts and column < len(elts):
             elt = elts[column]
             if getattr(elt, op)(value):
@@ -129,3 +130,11 @@ pattern = re.compile('/srv/kraken/(\w+?)/kraken')
 def get_running_krakens(platform, host):
     cols = extract_column(platform.ssh('ps aux | grep kraken | grep -v grep', host=host), -1)
     return [pattern.findall(col)[0] for col in cols]
+
+
+def get_version(app, host):
+    text = ssh('root', host, 'apt-cache policy {}'.format(app))
+    try:
+        return extract_column(filter_column(text, 0, startswith='Install'), 1, sep=':')[0]
+    except IndexError:
+        return None
