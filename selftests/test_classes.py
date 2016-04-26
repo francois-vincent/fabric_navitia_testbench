@@ -6,7 +6,7 @@ import pytest
 from ..docker import PlatformManager, container_stop
 from ..docker import ROOTDIR as DOCKER_ROOTDIR
 from ..fabric_integration import FabricManager
-from ..utils import cd, extract_column, filter_column, command, Command, file_exists
+from ..utils import cd, extract_column, filter_column, command, Command
 from ..test_common import skipifdev
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
@@ -136,20 +136,43 @@ def test_ssh():
     assert platform.ssh('pwd', host='host1') == '/root'
 
 
-# @skipifdev
-def test_put_file_exists():
+@skipifdev
+def test_docker_exec():
+    platform = PlatformManager('test', {'host1': 'testimage', 'host2': 'testimage'}).build_images().run_containers()
+    assert platform.docker_exec('pwd') == {'host1': '/', 'host2': '/'}
+    assert platform.docker_exec('pwd', host='host1') == '/'
+
+
+@skipifdev
+def test_ssh_put_file_exists():
     platform = PlatformManager('test', {'host1': 'testimage', 'host2': 'testimage'}).build_images().run_containers()
     platform.ssh('mkdir /root/testdir')
-    platform.put(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
+    platform.scp(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
     assert platform.ssh('cat /root/testdir/dummy.txt') == {'host1': 'hello world', 'host2': 'hello world'}
-    assert file_exists('/root/testdir/dummy.txt', 'root', platform.get_hosts().values())
+    assert platform.path_exists('/root/testdir/dummy.txt')
     platform.ssh('rm -f /root/testdir/dummy.txt', 'host1')
-    assert file_exists('/root/testdir/dummy.txt', 'root', platform.get_hosts()['host2'])
-    assert not file_exists('/root/testdir/dummy.txt', 'root', platform.get_hosts()['host1'])
+    assert platform.path_exists('/root/testdir/dummy.txt', 'host2')
+    assert not platform.path_exists('/root/testdir/dummy.txt', 'host1')
+    platform.ssh('rm -rf /root/testdir')
 
 
-# def test_put_get_data():
-#     platform = PlatformManager('test', {'host1': 'testimage', 'host2': 'testimage'}).build_images().run_containers()
-#     platform.ssh('mkdir /root/testdir')
-#     platform.put_data('fluctuat nec mergitur', '/root/testdir/bob.txt')
-#     assert platform.get_data('/root/testdir/bob.txt') == {'host1': 'fluctuat nec mergitur', 'host2': 'fluctuat nec mergitur'}
+@skipifdev
+def test_put_file_exists():
+    platform = PlatformManager('test', {'host1': 'testimage', 'host2': 'testimage'}).build_images().run_containers()
+    platform.docker_exec('mkdir /root/testdir')
+    platform.scp(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
+    assert platform.docker_exec('cat /root/testdir/dummy.txt') == {'host1': 'hello world', 'host2': 'hello world'}
+    assert platform.path_exists('/root/testdir/dummy.txt')
+    platform.docker_exec('rm -f /root/testdir/dummy.txt', 'host1')
+    assert platform.path_exists('/root/testdir/dummy.txt', 'host2')
+    assert not platform.path_exists('/root/testdir/dummy.txt', 'host1')
+    platform.docker_exec('rm -rf /root/testdir')
+
+
+# @skipifdev
+def test_put_get_data():
+    platform = PlatformManager('test', {'host1': 'testimage', 'host2': 'testimage'}).build_images().run_containers()
+    platform.docker_exec('mkdir /root/testdir')
+    platform.put_data('fluctuat nec mergitur', '/root/testdir/bob.txt')
+    assert platform.get_data('/root/testdir/bob.txt') == {'host1': 'fluctuat nec mergitur', 'host2': 'fluctuat nec mergitur'}
+    platform.docker_exec('rm -rf /root/testdir')

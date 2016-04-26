@@ -84,11 +84,17 @@ class Command(object):
     """ Use this class if you want to wait and get shell command output
     """
     def __init__(self, cmd):
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.wait()
-        self.stdout = p.stdout.read()
-        self.stderr = p.stderr.read()
-        self.returncode = p.returncode
+        self.p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.p.wait()
+        self.returncode = self.p.returncode
+
+    @property
+    def stdout(self):
+        return self.p.stdout.read()
+
+    @property
+    def stderr(self):
+        return self.p.stderr.read()
 
     def stdout_column(self, column, start=0):
         return extract_column(self.stdout, column, start)
@@ -107,27 +113,17 @@ def ssh(user, host, cmd):
                        '{user}@{host} {cmd}'.format(**locals())).stdout.strip()
 
 
-def put(source, dest, user, host):
+def scp(source, dest, host, user):
     """ source and dest must be absolute paths
     """
     with cd(ROOTDIR):
-        command('scp -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
+        command('scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
                  '{source} {user}@{host}:{dest}'.format(**locals()))
-
-
-def file_exists(path, user, hosts):
-    if isinstance(hosts, basestring):
-        hosts = [hosts]
-    for host in hosts:
-        if command('ssh -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
-                 '{user}@{host} test -e "{path}"'.format(**locals())):
-            return False
-    return True
 
 
 # =================== REMOTE HOSTS RELATED UTILITIES =======================
 
-pattern = re.compile('/srv/kraken/(.+?)/kraken')
+pattern = re.compile('/srv/kraken/(\w+?)/kraken')
 
 
 def get_running_krakens(platform, host):

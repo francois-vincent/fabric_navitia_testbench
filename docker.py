@@ -90,6 +90,40 @@ def get_container_ip(container, raises=False):
     return cmd.stdout.strip()
 
 
+def docker_exec(container, cmd, user=None, stdout_only=True, return_code_only=False, raises=False):
+    docker_cmd = 'docker exec -it {} {} {}'.format('-u {}'.format(user) if user else '', container, cmd)
+    if return_code_only:
+        return utils.command(docker_cmd)
+    dock = utils.Command(docker_cmd)
+    if raises and dock.returncode:
+        raise RuntimeError("Error while executing <{}>: [{}]".
+                           format(docker_cmd, dock.stderr.strip() or dock.returncode))
+    if stdout_only:
+        return dock.stdout.strip()
+    return dock
+
+
+def path_exists(path, container):
+    return not docker_exec(container, 'test -e {}'.format(path), return_code_only=True)
+
+
+def put_data(data, dest, container, append=False, user=None, perms=None):
+    if append and not path_exists(dest, container):
+        docker_exec(container, 'touch {}'.format(dest), user=user)
+    cmd = ''.join(('echo "', data, '" >>' if append else '" >', dest))
+    docker_exec(container, "/bin/sh -c '{}'".format(cmd), user=user, raises=True)
+    if perms:
+        utils.command('docker exec {} chmod {} {}'.format(container, perms, dest))
+
+
+def get_data(source, container):
+    return docker_exec(container, 'cat {}'.format(source), raises=True)
+
+
+def put_file(source, dest, container, user=None, perms=None):
+    pass
+
+
 class PlatformManager(object):
     """
     Class in charge of bringing up a running platform and performing other docker magic
@@ -206,25 +240,62 @@ class PlatformManager(object):
         return self.hosts
 
     def ssh(self, cmd, host=None):
+        """ this method requires that an ssh daemon is running on the target
+            and that an authorized_keys file is set with a rsa plubilc key,
+            all conditions met by images provided in this project.
+        """
         if host:
             return utils.ssh(self.user, get_container_ip(self.containers[host]), cmd)
         return {k: utils.ssh(self.user, get_container_ip(v), cmd) for k, v in self.containers.iteritems()}
     
-    def put(self, source, dest, host=None):
+    def scp(self, source, dest, host=None):
+        """ this method requires that an ssh daemon is running on the target
+            and that an authorized_keys file is set with a rsa plubilc key,
+            all conditions met by images provided in this project.
+        """
         containers = [self.containers[host]] if host else self.containers.itervalues()
         for container in containers:
-            utils.put(source, dest, self.user, get_container_ip(container))
+            utils.scp(source, dest, get_container_ip(container), self.user)
         return self
 
-    def put_data(self, data, dest, host=None, append=False):
+    def ssh_put_data(self, data, dest, host=None, append=False):
         if not append:
             self.ssh('touch {}'.format(dest), host)
         cmd = ''.join(('echo "', data, '" >>' if append else '" >', dest))
         self.ssh(cmd, host)
         return self
 
-    def get_data(self, source, host=None):
+    def ssh_get_data(self, source, host=None):
         return self.ssh('cat {}'.format(source), host)
+
+    def docker_exec(self, cmd, host=None):
+        if host:
+            return docker_exec(self.containers[host], cmd)
+        return {k: docker_exec(v, cmd) for k, v in self.containers.iteritems()}
+
+    def put_data(self, data, dest, host=None, append=False):
+        containers = [self.containers[host]] if host else self.containers.itervalues()
+        for container in containers:
+            put_data(data, dest, container, append=append)
+        return self
+
+    def put_file(self, data, dest, host=None, append=False):
+        containers = [self.containers[host]] if host else self.containers.itervalues()
+        for container in containers:
+            put_data(data, dest, container, append=append)
+        return self
+
+    def get_data(self, source, host=None):
+        if host:
+            return get_data(source, self.containers[host])
+        return {k: get_data(source, v) for k, v in self.containers.iteritems()}
+
+    def path_exists(self, path, host=None):
+        containers = [self.containers[host]] if host else self.containers.itervalues()
+        for container in containers:
+            if not path_exists(path, container):
+                return False
+        return True
 
     def commit_containers(self):
         """

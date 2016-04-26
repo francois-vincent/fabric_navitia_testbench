@@ -26,7 +26,7 @@ nominal_krakens = {'host1': {'us-wa', 'fr-nw', 'fr-npdc'}, 'host2': {'fr-ne-amie
 krakens_after_stop = {'host1': {'fr-nw', 'fr-npdc'}, 'host2': {'fr-idf', 'fr-cen'}}
 
 
-# @skipifdev
+@skipifdev
 def test_stop_restart_single_kraken(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -36,7 +36,7 @@ def test_stop_restart_single_kraken(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_restart_all_krakens(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -46,7 +46,7 @@ def test_restart_all_krakens(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_stop_require_start_kraken(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -56,7 +56,7 @@ def test_stop_require_start_kraken(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_require_all_krakens_started(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -66,12 +66,12 @@ def test_require_all_krakens_started(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_stop_start_apache(platform):
     _test_stop_start_apache(platform, ('host1', 'host2'))
 
 
-# @skipifdev
+@skipifdev
 def test_test_kraken_nowait_nofail(platform, capsys):
     _test_test_kraken_nowait_nofail(platform, capsys,
                                     map={'host1': {'us-wa'}, 'host2': {'fr-ne-amiens'}}, ret_val=False)

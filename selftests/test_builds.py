@@ -42,7 +42,7 @@ def test_single():
         issubset(set(extract_column(platform.ssh('ps -A', 'host'), -1, 1)))
     # check scp file transfer
     platform.ssh('mkdir /root/testdir')
-    platform.put(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
+    platform.scp(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
     assert platform.ssh('cat /root/testdir/dummy.txt', 'host') == 'hello world'
     platform.ssh('rm -rf /root/testdir')
 
@@ -81,6 +81,6 @@ def test_dual():
         issubset(set(extract_column(platform.ssh('ps -A', 'host2'), -1, 1)))
     # check scp file transfer
     platform.ssh('mkdir /root/testdir')
-    platform.put(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
+    platform.scp(os.path.join(ROOTDIR, 'dummy.txt'), '/root/testdir')
     assert platform.ssh('cat /root/testdir/dummy.txt') == {'host1': 'hello world', 'host2': 'hello world'}
     platform.ssh('rm -rf /root/testdir')

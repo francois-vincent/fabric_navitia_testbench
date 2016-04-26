@@ -24,7 +24,7 @@ nominal_krakens = {'host': {'default'}}
 krakens_after_stop = {'host': set()}
 
 
-# @skipifdev
+@skipifdev
 def test_stop_restart_single_kraken(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -34,7 +34,7 @@ def test_stop_restart_single_kraken(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_restart_all_krakens(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -44,7 +44,7 @@ def test_restart_all_krakens(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_stop_require_start_kraken(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -54,7 +54,7 @@ def test_stop_require_start_kraken(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_require_all_krakens_started(platform):
     _test_stop_restart_kraken(platform,
                              map_start=nominal_krakens,
@@ -64,17 +64,17 @@ def test_require_all_krakens_started(platform):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_stop_start_apache(platform):
     _test_stop_start_apache(platform, ('host',))
 
 
-# @skipifdev
+@skipifdev
 def test_test_kraken_nowait_nofail(platform, capsys):
     _test_test_kraken_nowait_nofail(platform, capsys, map={'host': {'default'}}, ret_val=False)
 
 
-# @skipifdev
+@skipifdev
 def test_check_dead_instances(platform, capsys):
     platform, fabric = platform
     # make sure that krakens are started
