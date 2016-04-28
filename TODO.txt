@@ -1,0 +1,20 @@
+
+#0 montrer les sorties du build
+
+#2 les containers restartés peuvent avoir des ip incohérentes avec les configurations.
+   utiliser --link ??
+   imposer l'ordre ?? non car les adresses peuvent être prises par d'autres containers entre temps
+   imposer l'ip ?
+   interdire le restart des containers pour les systèmes multiples ?
+
+#4 créer un LB (HAProxy) ??
+
+#6 déplacer dans fabric_navitia
+
+#7 option faire le ménage après les tests ? (--clean)
+
+#9 control owner and rights when scp
+
+#10 implement docker.put_file
+
+#11 refactor docker.PlatformManager.path_exists et factoriser test_kraken_setup()

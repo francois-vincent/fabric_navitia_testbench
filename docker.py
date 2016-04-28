@@ -121,6 +121,7 @@ def get_data(source, container):
 
 
 def put_file(source, dest, container, user=None, perms=None):
+    # TODO
     pass
 
 
@@ -162,6 +163,12 @@ class PlatformManager(object):
 
     def get_manager(self, name):
         return self.managers.get(name)
+
+    def host_from_container(self, container):
+        for k, v in self.containers.iteritems():
+            if v == container:
+                return k
+        raise LookupError("container {} not found".format(container))
 
     def setup(self, reset=None):
         """
@@ -301,8 +308,10 @@ class PlatformManager(object):
     def path_exists(self, path, host=None):
         containers = [self.containers[host]] if host else self.containers.itervalues()
         for container in containers:
-            if not path_exists(path, container):
-                return False
+            if path_exists(path, container):
+                continue
+            print(utils.red("Path <{}> not found on host <{}>".format(path, self.host_from_container(container))))
+            return False
         return True
 
     def get_version(self, app, host=None):

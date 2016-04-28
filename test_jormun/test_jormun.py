@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from ..test_common import skipifdev
-from ..test_common.test_kraken import _start_and_check_krakens
+from test_common import skipifdev
+from test_common.test_kraken import _start_and_check_krakens
 
 
 # @skipifdev

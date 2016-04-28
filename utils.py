@@ -10,7 +10,6 @@ ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
 # ======================= GENERAL UTILILITIES =======================
 
-
 def extract_column(text, column, start=0, sep=None):
     """ Extracts columns from a formatted text with blanks separated words
     :param text:
@@ -52,7 +51,6 @@ def filter_column(text, column, sep=None, **kwargs):
 
 
 # ======================= OS RELATED UTILITIES =======================
-
 
 # this is a direct copy from fabric
 def _wrap_with(code):
@@ -124,7 +122,7 @@ def scp(source, dest, host, user):
 
 # =================== REMOTE HOSTS RELATED UTILITIES =======================
 
-pattern = re.compile('/srv/kraken/(\w+?)/kraken')
+pattern = re.compile('/srv/kraken/(.+?)/kraken')
 
 
 def get_running_krakens(platform, host):
@@ -138,3 +136,13 @@ def get_version(app, host):
         return extract_column(filter_column(text, 0, startswith='Install'), 1, sep=':')[0]
     except IndexError:
         return None
+
+
+def python_requirements_compare(freeze, requirements):
+    missing = []
+    fre_lines = freeze.strip().splitlines()
+    req_lines = requirements.strip().splitlines()
+    for req in req_lines:
+        if '==' in req and req not in fre_lines:
+            missing.append(req)
+    return missing
