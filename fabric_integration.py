@@ -1,6 +1,12 @@
 # encoding: utf-8
 
+# here are the definitions and class that manage the interactions with the python fabric module
+# and fabric_navitia.
+# good practice: test modules should only access fabric and fabric_navitia this way
+
+
 from importlib import import_module
+import os.path
 import sys
 
 import utils
@@ -14,6 +20,9 @@ if not fabric_navitia_path:
     raise RuntimeError("Could not find module 'fabric_navitia', please set PYTHONPATH accordingly")
 
 from fabric import api
+
+ROOT = os.path.basename(os.path.dirname(__file__))
+print(utils.red(ROOT))
 
 
 with utils.cd(fabric_navitia_path):
@@ -49,6 +58,7 @@ class FabricManager(object):
     def __init__(self, platform):
         self.platform = platform
         self.platform.register_manager('fabric', self)
+        self.env = api.env
 
     @staticmethod
     def get_object(obj_spec):
@@ -64,10 +74,10 @@ class FabricManager(object):
             raise RuntimeError("Can't find object {} in fabfile {}/fabfile: [{}]".format(obj_spec, fabric_navitia_path, e))
 
     def set_platform(self):
-        module = import_module('.platforms.' + self.platform.platform, 'fabric_navitia_testbench')
+        module = import_module('.platforms.' + self.platform.platform, ROOT)
         getattr(module, self.platform.platform)(**self.platform.get_hosts(True))
-        if getattr(api.env, 'default_ssh_user'):
-            self.platform.user = api.env.default_ssh_user
+        if getattr(self.env, 'default_ssh_user'):
+            self.platform.user = self.env.default_ssh_user
         return self
 
     def execute(self, task, *args, **kwargs):

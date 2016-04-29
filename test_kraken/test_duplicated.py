@@ -1,6 +1,5 @@
 # encoding: utf-8
 
-from fabric import api
 import pytest
 
 from ..test_common import skipifdev
@@ -12,7 +11,7 @@ from ..test_common.test_kraken import (_test_stop_restart_kraken,
 
 def test_kraken_setup(duplicated):
     duplicated, fabric = duplicated
-    for krak in api.env.instances:
+    for krak in fabric.env.instances:
         assert duplicated.path_exists('/etc/init.d/kraken_{}'.format(krak))
         assert duplicated.path_exists('/srv/kraken/{}/kraken.ini'.format(krak))
         assert duplicated.path_exists('/etc/jormungandr.d/{}.json'.format(krak), 'host1')
@@ -81,9 +80,9 @@ def test_get_no_data_instances(duplicated, capsys):
     platform, fabric = duplicated
     fabric.execute('component.kraken.get_no_data_instances')
     out, err = capsys.readouterr()
-    for instance in api.env.instances:
+    for instance in fabric.env.instances:
         assert "NOTICE: no data for {}, append it to exclude list".format(instance) in out
-    assert set(api.env.excluded_instances) == set(api.env.instances)
+    assert set(fabric.env.excluded_instances) == set(fabric.env.instances)
 
 
 @skipifdev
@@ -91,7 +90,7 @@ def test_test_all_krakens_no_wait(duplicated, capsys):
     platform, fabric = duplicated
     fabric.execute('test_all_krakens')
     out, err = capsys.readouterr()
-    for instance in api.env.instances:
+    for instance in fabric.env.instances:
         assert "WARNING: instance {} has no loaded data".format(instance) in out
 
 

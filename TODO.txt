@@ -18,3 +18,7 @@
 #10 implement docker.put_file
 
 #11 refactor docker.PlatformManager.path_exists et factoriser test_kraken_setup()
+
+#12 fix "ValueError: I/O operation on closed file" when fabric raises SystemExit
+
+#13 refactor FabricManager.set_platform to accept api.env variables to read / write

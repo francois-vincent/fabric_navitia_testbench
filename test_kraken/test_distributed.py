@@ -1,6 +1,5 @@
 # encoding: utf-8
 
-from fabric import api
 import pytest
 
 from ..test_common import skipifdev
@@ -88,9 +87,9 @@ def test_get_no_data_instances(distributed, capsys):
     platform, fabric = distributed
     fabric.execute('component.kraken.get_no_data_instances')
     out, err = capsys.readouterr()
-    for instance in api.env.instances:
+    for instance in fabric.env.instances:
         assert "NOTICE: no data for {}, append it to exclude list".format(instance) in out
-    assert set(api.env.excluded_instances) == set(api.env.instances)
+    assert set(fabric.env.excluded_instances) == set(fabric.env.instances)
 
 
 @skipifdev
@@ -98,7 +97,7 @@ def test_test_all_krakens_no_wait(distributed, capsys):
     platform, fabric = distributed
     fabric.execute('test_all_krakens')
     out, err = capsys.readouterr()
-    for instance in api.env.instances:
+    for instance in fabric.env.instances:
         assert "WARNING: instance {} has no loaded data".format(instance) in out
 
 

@@ -1,7 +1,5 @@
 # encoding: utf-8
 
-from fabric import api
-
 from ..utils import filter_column, extract_column, python_requirements_compare
 from ..test_common import skipifdev
 
@@ -33,7 +31,7 @@ def test_setup_kraken(distributed_undeployed):
     assert platform.path_exists('/srv/monitor/monitor.wsgi')
     assert platform.path_exists('/srv/monitor/settings.py')
     # check apache configuration for monitor-kraken
-    if api.env.distrib == 'debian7':
+    if fabric.env.distrib == 'debian7':
         assert platform.path_exists('/etc/apache2/conf.d/monitor-kraken')
     else:
         assert platform.path_exists('/etc/apache2/conf-available/monitor-kraken.conf')
@@ -48,7 +46,7 @@ def test_upgrade_engine_packages(distributed_undeployed):
     fabric.execute('upgrade_engine_packages')
     assert platform.get_version('python2.7', 'host1').startswith('2.7')
     assert platform.get_version('python2.7', 'host2').startswith('2.7')
-    if api.env.distrib == 'debian7':
+    if fabric.env.distrib == 'debian7':
         assert platform.get_version('libzmq-dev', 'host1')
         assert platform.get_version('libzmq-dev', 'host2')
     else:

@@ -3,8 +3,6 @@
 import time
 import pytest
 
-from fabric import api
-
 from ..test_common import skipifdev
 from ..test_common.test_kraken import (_test_stop_restart_kraken,
                                        _test_stop_start_apache,
@@ -13,6 +11,7 @@ from ..test_common.test_kraken import (_test_stop_restart_kraken,
 from ..utils import get_running_krakens
 
 
+@skipifdev
 def test_kraken_setup(single):
     platform, fabric = single
     assert platform.path_exists('/etc/init.d/kraken_default')
@@ -101,7 +100,7 @@ def test_create_eng_instance_single(single, capsys):
     assert set(get_running_krakens(platform, 'host')) == {'default', 'toto'}
 
 
-# @skipifdev
+@skipifdev
 def test_remove_kraken_instance_single(single):
     platform, fabric = single
     fabric.get_object('instance.add_instance')('toto', 'passwd')
