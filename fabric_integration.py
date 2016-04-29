@@ -50,6 +50,19 @@ class FabricManager(object):
         self.platform = platform
         self.platform.register_manager('fabric', self)
 
+    @staticmethod
+    def get_object(obj_spec):
+        try:
+            if '.' in obj_spec:
+                module, task = obj_spec.rsplit('.', 1)
+                module = import_module('fabfile.' + module)
+                return getattr(module, task)
+            else:
+                module = import_module('fabfile')
+                return getattr(module, obj_spec)
+        except ImportError as e:
+            raise RuntimeError("Can't find object {} in fabfile {}/fabfile: [{}]".format(obj_spec, fabric_navitia_path, e))
+
     def set_platform(self):
         module = import_module('.platforms.' + self.platform.platform, 'fabric_navitia_testbench')
         getattr(module, self.platform.platform)(**self.platform.get_hosts(True))
@@ -58,17 +71,7 @@ class FabricManager(object):
         return self
 
     def execute(self, task, *args, **kwargs):
-        fab_task = get_fabric_task(task)
-        try:
-            if '.' in fab_task:
-                module, task = fab_task.rsplit('.', 1)
-                module = import_module('fabfile.' + module)
-                cmd = getattr(module, task)
-            else:
-                module = import_module('fabfile')
-                cmd = getattr(module, fab_task)
-        except ImportError as e:
-            raise RuntimeError("Can't find task {} in fabfile {}/fabfile: [{}]".format(fab_task, fabric_navitia_path, e))
+        cmd = self.get_object(get_fabric_task(task))
         print(utils.magenta("Running task " + get_task_description(cmd)))
         return api.execute(cmd, *args, **kwargs)
 

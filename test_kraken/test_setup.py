@@ -80,30 +80,24 @@ def test_upgrade_monitor_kraken_packages(distributed_undeployed):
 def test_update_eng_instance_conf_duplicated(duplicated_undeployed):
     platform, fabric = duplicated_undeployed
     platform.docker_exec("mkdir -p /srv/kraken")
-    for instance in api.env.instances:
-        fabric.execute('update_eng_instance_conf', instance)
-        assert platform.path_exists('/srv/kraken/{}/kraken.ini'.format(instance))
-        assert platform.path_exists('/etc/init.d/kraken_{}'.format(instance))
+    fabric.execute('update_eng_instance_conf', 'us-wa')
+    assert platform.path_exists('/srv/kraken/us-wa/kraken.ini')
+    assert platform.path_exists('/etc/init.d/kraken_us-wa')
 
 
 @skipifdev
 def test_update_eng_instance_conf_distributed(distributed_undeployed):
     platform, fabric = distributed_undeployed
     platform.docker_exec("mkdir -p /srv/kraken")
-    for krak in ('us-wa', 'fr-nw', 'fr-npdc'):
-        fabric.execute('update_eng_instance_conf', krak)
-        assert platform.path_exists('/srv/kraken/{}/kraken.ini'.format(krak), 'host1')
-        assert platform.path_exists('/etc/init.d//kraken_{}'.format(krak), 'host1')
-    for krak in ('fr-ne-amiens', 'fr-idf', 'fr-cen'):
-        fabric.execute('update_eng_instance_conf', krak)
-        assert platform.path_exists('/srv/kraken/{}/kraken.ini'.format(krak), 'host2')
-        assert platform.path_exists('/etc/init.d/kraken_{}'.format(krak), 'host2')
-
-
-# @skipifdev
-def test_create_eng_instance_distributed(distributed_undeployed):
-    platform, fabric = distributed_undeployed
-    for krak in ('us-wa', 'fr-nw', 'fr-npdc'):
-        fabric.execute('create_eng_instance', krak)
-    for krak in ('fr-ne-amiens', 'fr-idf', 'fr-cen'):
-        fabric.execute('create_eng_instance', krak)
+    fabric.execute('update_eng_instance_conf', 'us-wa')
+    fabric.execute('update_eng_instance_conf', 'fr-cen')
+    assert platform.path_exists('/srv/kraken', 'host1')
+    assert platform.path_exists('/srv/kraken', 'host2')
+    assert platform.path_exists('/srv/kraken/us-wa/kraken.ini', 'host1')
+    assert platform.path_exists('/etc/init.d//kraken_us-wa', 'host1')
+    assert not platform.path_exists('/srv/kraken/us-wa/kraken.ini', 'host2')
+    assert not platform.path_exists('/etc/init.d//kraken_us-wa', 'host2')
+    assert platform.path_exists('/srv/kraken/fr-cen/kraken.ini', 'host2')
+    assert platform.path_exists('/etc/init.d/kraken_fr-cen', 'host2')
+    assert not platform.path_exists('/srv/kraken/fr-cen/kraken.ini', 'host1')
+    assert not platform.path_exists('/etc/init.d/kraken_fr-cen', 'host1')

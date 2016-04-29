@@ -3,11 +3,14 @@
 import time
 import pytest
 
+from fabric import api
+
 from ..test_common import skipifdev
 from ..test_common.test_kraken import (_test_stop_restart_kraken,
                                        _test_stop_start_apache,
                                        _test_test_kraken_nowait_nofail
                                        )
+from ..utils import get_running_krakens
 
 
 def test_kraken_setup(single):
@@ -83,3 +86,28 @@ def test_check_dead_instances(single, capsys):
     out, err = capsys.readouterr()
     assert 'http://{}:80/monitor-kraken/?instance=default'.format(single.get_hosts().values()[0]) in out
     assert 'The threshold of allowed dead instances is exceeded: Found 1 dead instances out of 1.' in out
+
+
+@skipifdev
+def test_create_eng_instance_single(single, capsys):
+    platform, fabric = single
+    fabric.get_object('instance.add_instance')('toto', 'passwd')
+    fabric.execute('create_eng_instance', 'toto')
+    out, err = capsys.readouterr()
+    assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host']) in out
+    assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host')
+    assert platform.path_exists('/etc/init.d//kraken_toto', 'host')
+    assert platform.path_exists('/var/log/kraken/toto.log', 'host')
+    assert set(get_running_krakens(platform, 'host')) == {'default', 'toto'}
+
+
+# @skipifdev
+def test_remove_kraken_instance_single(single):
+    platform, fabric = single
+    fabric.get_object('instance.add_instance')('toto', 'passwd')
+    fabric.execute('create_eng_instance', 'toto')
+    fabric.execute('remove_kraken_instance', 'toto', purge_logs=True)
+    assert not platform.path_exists('/srv/kraken/toto/kraken.ini', 'host')
+    assert not platform.path_exists('/etc/init.d//kraken_toto', 'host')
+    assert not platform.path_exists('/var/log/kraken/toto.log', 'host')
+    assert get_running_krakens(platform, 'host') == ['default']
