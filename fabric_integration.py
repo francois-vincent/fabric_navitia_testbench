@@ -73,11 +73,17 @@ class FabricManager(object):
         except ImportError as e:
             raise RuntimeError("Can't find object {} in fabfile {}/fabfile: [{}]".format(obj_spec, fabric_navitia_path, e))
 
-    def set_platform(self):
+    def set_platform(self, **write):
+        """ Sets fabric.api.env attributes from the selected platform
+        The setup follows the sequence:
+        fabfile.env.platforms > tests_integration.platforms.common > tests_integration.platforms.<selected_platform>
+        :param write: dictionary of attr, values to inject into fabric.api.env
+        """
         module = import_module('.platforms.' + self.platform.platform, ROOT)
         getattr(module, self.platform.platform)(**self.platform.get_hosts(True))
-        if getattr(self.env, 'default_ssh_user'):
-            self.platform.user = self.env.default_ssh_user
+        self.platform.user = getattr(self.env, 'default_ssh_user', 'root')
+        for k, v in write.iteritems():
+            setattr(self.env, k, v)
         return self
 
     def execute(self, task, *args, **kwargs):

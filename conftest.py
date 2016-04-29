@@ -3,8 +3,8 @@
 import pytest
 import time
 
-from ..docker import PlatformManager
-from ..fabric_integration import FabricManager
+from docker import PlatformManager
+from fabric_integration import FabricManager
 
 
 def pytest_addoption(parser):
@@ -24,8 +24,7 @@ def setup_platform(platform, distri, deploy=True):
     platform.setup(reset and 'rm_container')
     time.sleep(1)
     # then set up the fabric platform
-    fabric.set_platform()
-    fabric.env.distrib = distri
+    fabric.set_platform(distrib=distri)
     if deploy:
         # then deploy Navitia on it
         fabric.deploy_from_scratch(reset)

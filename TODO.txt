@@ -9,8 +9,6 @@
 
 #4 créer un LB (HAProxy) ??
 
-#6 déplacer dans fabric_navitia
-
 #7 option faire le ménage après les tests ? (--clean)
 
 #9 control owner and rights when scp
