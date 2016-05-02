@@ -305,12 +305,17 @@ class PlatformManager(object):
             return get_data(source, self.containers[host])
         return {k: get_data(source, v) for k, v in self.containers.iteritems()}
 
-    def path_exists(self, path, host=None):
+    def path_exists(self, path, host=None, negate=False):
         containers = [self.containers[host]] if host else self.containers.itervalues()
         for container in containers:
-            if path_exists(path, container):
-                continue
-            print(utils.red("Path <{}> not found on host <{}>".format(path, self.host_from_container(container))))
+            if negate:
+                if not path_exists(path, container):
+                    continue
+                print(utils.red("Found path <{}> on host <{}>".format(path, self.host_from_container(container))))
+            else:
+                if path_exists(path, container):
+                    continue
+                print(utils.red("Path <{}> not found on host <{}>".format(path, self.host_from_container(container))))
             return False
         return True
 

@@ -77,7 +77,7 @@ class FabricManager(object):
         """ Sets fabric.api.env attributes from the selected platform
         The setup follows the sequence:
         fabfile.env.platforms > tests_integration.platforms.common > tests_integration.platforms.<selected_platform>
-        :param write: dictionary of attr, values to inject into fabric.api.env
+        :param write: dictionary to inject into fabric.api.env
         """
         module = import_module('.platforms.' + self.platform.platform, ROOT)
         getattr(module, self.platform.platform)(**self.platform.get_hosts(True))

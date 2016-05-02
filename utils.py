@@ -11,10 +11,11 @@ ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 # ======================= GENERAL UTILILITIES =======================
 
 def extract_column(text, column, start=0, sep=None):
-    """ Extracts columns from a formatted text with blanks separated words
+    """ Extracts columns from a formatted text
     :param text:
     :param column: the column number: from 0, -1 = last column
     :param start: the line number to start with (headers removal)
+    :param sep: optional separator between words  (default is arbitrary number of blanks)
     :return: a list of words
     """
     lines = text.splitlines() if isinstance(text, basestring) else text
@@ -29,6 +30,13 @@ def extract_column(text, column, start=0, sep=None):
 
 
 def filter_column(text, column, sep=None, **kwargs):
+    """ Filters (like grep) lines of text according to a specified column and operator/value
+    :param text: a string
+    :param column: integer >=0
+    :param sep: optional separator between words  (default is arbitrary number of blanks)
+    :param kwargs: operator=value eg eq='exact match', contains='substring', startswith='prefix' etc...
+    :return:
+    """
     if len(kwargs) != 1:
         raise TypeError("Missing or too many keyword parameter in filter_column")
     op, value = kwargs.items()[0]
