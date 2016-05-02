@@ -24,19 +24,6 @@ RUN apt-get install -y apache2 libapache2-mod-wsgi
 # set basic Apache config
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Redis
-RUN apt-get install -y redis-server
-# change redis-server conf for not daemonize (for supervisord)
-RUN sed -i '/^daemonize yes/c\daemonize no' /etc/redis/redis.conf
-
-# Postgres
-RUN apt-get install -y  postgresql-server-dev-all postgis
-
-# RabbitMQ
-RUN apt-get install -y rabbitmq-server
-RUN touch /etc/rabbitmq/rabbitmq.config
-RUN echo "[{rabbit, [{loopback_users, []}]}]." >> /etc/rabbitmq/rabbitmq.config
-
 # Supervisord
 RUN apt-get install -y supervisor
 COPY debian7/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

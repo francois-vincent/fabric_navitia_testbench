@@ -7,7 +7,7 @@ from common import env_common
 
 def distributed(host1, host2):
     env.host1_ip, env.host2_ip = host1, host2
-    env_common([host1], [host1], [host1, host2], [host1])
+    env_common([host1, host2], [host1], [host1, host2], [host1])
     env.name = 'distributed'
 
     env.postgresql_database_host = 'localhost'
