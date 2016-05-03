@@ -20,3 +20,5 @@
 #13 peut-on faire les tests kraken en déployant seulement les paquets kraken ?
 
 #14 faire fonctionner debian7
+
+#15 checker plus précisément le contenu des fichiers de conf

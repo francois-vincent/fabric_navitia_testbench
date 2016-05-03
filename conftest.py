@@ -43,7 +43,7 @@ def single():
 def distributed():
     # Create a platform with associated fabric manager
     distri = pytest.config.getoption('--distri')
-    platform = PlatformManager('distributed', {'host1': distri, 'host2': '{}light'.format(distri)})
+    platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
     return setup_platform(platform, distri)
 
 
@@ -51,7 +51,7 @@ def distributed():
 def duplicated():
     # Create a platform with associated fabric manager
     distri = pytest.config.getoption('--distri')
-    platform = PlatformManager('duplicated', {'host1': distri, 'host2': '{}light'.format(distri)})
+    platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
     return setup_platform(platform, distri)
 
 
@@ -67,7 +67,7 @@ def single_undeployed():
 def distributed_undeployed():
     # Create a platform with associated fabric manager
     distri = pytest.config.getoption('--distri')
-    platform = PlatformManager('distributed', {'host1': distri, 'host2': '{}light'.format(distri)})
+    platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
     return setup_platform(platform, distri, deploy=False)
 
 
@@ -75,5 +75,5 @@ def distributed_undeployed():
 def duplicated_undeployed():
     # Create a platform with associated fabric manager
     distri = pytest.config.getoption('--distri')
-    platform = PlatformManager('duplicated', {'host1': distri, 'host2': '{}light'.format(distri)})
+    platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
     return setup_platform(platform, distri, deploy=False)

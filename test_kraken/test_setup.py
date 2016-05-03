@@ -1,13 +1,14 @@
 # encoding: utf-8
 
-from ..utils import filter_column, extract_column, python_requirements_compare
+from ..docker import docker_exec
+from ..utils import filter_column, extract_column, python_requirements_compare, get_running_krakens
 from ..test_common import skipifdev
 
 
 @skipifdev
 def test_update_monitor_configuration(distributed_undeployed):
     platform, fabric = distributed_undeployed
-    platform.docker_exec("mkdir -p /srv/monitor")
+    platform.docker_exec("mkdir -p /srv/monitor && rm -f /srv/monitor/*")
     fabric.execute('update_monitor_configuration')
     assert platform.path_exists('/srv/monitor/monitor.wsgi')
     assert platform.path_exists('/srv/monitor/settings.py')
@@ -44,8 +45,10 @@ def test_setup_kraken(distributed_undeployed):
 def test_upgrade_engine_packages(distributed_undeployed):
     platform, fabric = distributed_undeployed
     fabric.execute('upgrade_engine_packages')
-    assert platform.get_version('python2.7', 'host1').startswith('2.7')
-    assert platform.get_version('python2.7', 'host2').startswith('2.7')
+    assert platform.get_version('python', 'host1').startswith('2.7')
+    assert platform.get_version('python', 'host2').startswith('2.7')
+    assert docker_exec(platform.containers['host1'], 'pip -V', return_code_only=True) == 0
+    assert docker_exec(platform.containers['host2'], 'pip -V', return_code_only=True) == 0
     if fabric.env.distrib == 'debian7':
         assert platform.get_version('libzmq-dev', 'host1')
         assert platform.get_version('libzmq-dev', 'host2')
@@ -64,14 +67,11 @@ def test_upgrade_monitor_kraken_packages(distributed_undeployed):
     assert platform.get_version('navitia-monitor-kraken', 'host2')
     assert platform.path_exists('/usr/share/monitor_kraken/requirements.txt')
     known_missing = ['argparse==1.2.1', 'wsgiref==0.1.2']
-    assert python_requirements_compare(
-        platform.docker_exec('pip freeze', 'host1'),
-        platform.get_data('/usr/share/monitor_kraken/requirements.txt', 'host1')
-    ) == known_missing
-    assert python_requirements_compare(
-        platform.docker_exec('pip freeze', 'host2'),
-        platform.get_data('/usr/share/monitor_kraken/requirements.txt', 'host2')
-    ) == known_missing
+    for host in ('host1', 'host2'):
+        assert python_requirements_compare(
+            platform.docker_exec('pip freeze', host),
+            platform.get_data('/usr/share/monitor_kraken/requirements.txt', host)
+        ) == known_missing
 
 
 @skipifdev
