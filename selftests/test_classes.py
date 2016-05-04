@@ -169,7 +169,7 @@ def test_put_file_exists():
     platform.docker_exec('rm -rf /root/testdir')
 
 
-# @skipifdev
+@skipifdev
 def test_put_get_data():
     platform = PlatformManager('test', {'host1': 'testimage', 'host2': 'testimage'}).build_images().run_containers()
     platform.docker_exec('mkdir /root/testdir')

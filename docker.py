@@ -91,7 +91,7 @@ def get_container_ip(container, raises=False):
 
 
 def docker_exec(container, cmd, user=None, stdout_only=True, return_code_only=False, raises=False):
-    docker_cmd = 'docker exec -it {} {} {}'.format('-u {}'.format(user) if user else '', container, cmd)
+    docker_cmd = 'docker exec -i {} {} {}'.format('-u {}'.format(user) if user else '', container, cmd)
     if return_code_only:
         return utils.command(docker_cmd)
     dock = utils.Command(docker_cmd)

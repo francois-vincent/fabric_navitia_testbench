@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 from ..docker import docker_exec
-from ..utils import filter_column, extract_column, python_requirements_compare, get_running_krakens
+from ..utils import filter_column, extract_column, python_requirements_compare
 from ..test_common import skipifdev
 
 

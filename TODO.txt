@@ -19,8 +19,17 @@
 
 #13 peut-on faire les tests kraken en déployant seulement les paquets kraken ?
 
-#14 faire fonctionner debian7
+#14 faire fonctionner debian7 (artemis ? autre ?)
 
 #15 checker plus précisément le contenu des fichiers de conf
 
 #16 les plateformes doubles ont chacune un postgres. Les configurer avec un seul postgres ?
+
+#17 envisager VM + vagrant pour debian8+systemd
+
+#18 tests setup: recréer les containers à chaque test
+
+#19 tests deployed: utiliser une image commitée et recréer les containers à chaque test
+    (plus redémarrer les process non supervisés)
+
+#20 appeler les tests pour debian7 et 8 avec fixture(params=[...])
