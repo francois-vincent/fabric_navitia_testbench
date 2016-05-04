@@ -8,7 +8,7 @@ from ..test_common import skipifdev
 @skipifdev
 def test_update_monitor_configuration(distributed_undeployed):
     platform, fabric = distributed_undeployed
-    platform.docker_exec("mkdir -p /srv/monitor && rm -f /srv/monitor/*")
+    platform.docker_exec("mkdir -p /srv/monitor")
     fabric.execute('update_monitor_configuration')
     assert platform.path_exists('/srv/monitor/monitor.wsgi')
     assert platform.path_exists('/srv/monitor/settings.py')

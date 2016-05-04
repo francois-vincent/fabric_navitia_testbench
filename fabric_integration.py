@@ -19,8 +19,6 @@ for x in sys.path:
 if not fabric_navitia_path:
     raise RuntimeError("Could not find module 'fabric_navitia', please set PYTHONPATH accordingly")
 
-from fabric import api
-
 ROOT = os.path.basename(os.path.dirname(__file__))
 print(utils.red(ROOT))
 
@@ -58,7 +56,15 @@ class FabricManager(object):
     def __init__(self, platform):
         self.platform = platform
         self.platform.register_manager('fabric', self)
+        try:
+            fabric = reload(fabric)
+        except NameError:
+            import fabric
+        from fabric import api
+        self.api = api
         self.env = api.env
+        # wait until platforms are ready
+        self.platform.docker_exec('pwd')
 
     @staticmethod
     def get_object(obj_spec):
@@ -89,7 +95,7 @@ class FabricManager(object):
     def execute(self, task, *args, **kwargs):
         cmd = self.get_object(get_fabric_task(task))
         print(utils.magenta("Running task " + get_task_description(cmd)))
-        return api.execute(cmd, *args, **kwargs)
+        return self.api.execute(cmd, *args, **kwargs)
 
     def get_version(self, role='eng'):
         return self.execute('utils.get_version', role).values()[0]
