@@ -22,3 +22,5 @@
 #14 faire fonctionner debian7
 
 #15 checker plus précisément le contenu des fichiers de conf
+
+#16 les plateformes doubles ont chacune un postgres. Les configurer avec un seul postgres ?

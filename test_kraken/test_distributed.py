@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+import pytest
+
 from ..test_common import skipifdev
 from ..test_common.test_kraken import (_test_stop_restart_kraken,
                                        _test_stop_start_apache,

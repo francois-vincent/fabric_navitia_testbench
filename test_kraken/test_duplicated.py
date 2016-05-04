@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+import pytest
+
 from ..test_common import skipifdev
 from ..test_common.test_kraken import (_test_stop_restart_kraken,
                                        _test_stop_start_apache,
@@ -106,7 +108,7 @@ def test_test_all_krakens_no_wait(duplicated, capsys):
 #            'Found 12 dead instances out of 6.' in out
 
 
-# @skipifdev
+@skipifdev
 def test_create_remove_eng_instance(duplicated, capsys):
     platform, fabric = duplicated
     fabric.get_object('instance.add_instance')('toto', 'passwd',
