@@ -8,6 +8,7 @@ from ..test_common import skipifdev
 @skipifdev
 def test_update_monitor_configuration(distributed_undeployed):
     platform, fabric = distributed_undeployed
+    # prepare required folder before test
     platform.docker_exec("mkdir -p /srv/monitor")
     fabric.execute('update_monitor_configuration')
     assert platform.path_exists('/srv/monitor/monitor.wsgi')
@@ -77,6 +78,7 @@ def test_upgrade_monitor_kraken_packages(distributed_undeployed):
 @skipifdev
 def test_update_eng_instance_conf_duplicated(duplicated_undeployed):
     platform, fabric = duplicated_undeployed
+    # prepare required folder before test
     platform.docker_exec("mkdir -p /srv/kraken")
     fabric.execute('update_eng_instance_conf', 'us-wa')
     assert platform.path_exists('/srv/kraken/us-wa/kraken.ini')
@@ -86,6 +88,7 @@ def test_update_eng_instance_conf_duplicated(duplicated_undeployed):
 @skipifdev
 def test_update_eng_instance_conf_distributed(distributed_undeployed):
     platform, fabric = distributed_undeployed
+    # prepare required folder before test
     platform.docker_exec("mkdir -p /srv/kraken")
     fabric.execute('update_eng_instance_conf', 'us-wa')
     fabric.execute('update_eng_instance_conf', 'fr-cen')

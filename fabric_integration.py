@@ -5,9 +5,14 @@
 # good practice: test modules should only access fabric and fabric_navitia this way
 
 
+from cStringIO import StringIO
 from importlib import import_module
+import multiprocessing
 import os.path
+import Queue
 import sys
+
+from fabric import api
 
 import utils
 
@@ -49,22 +54,45 @@ def get_task_description(task):
     return desc
 
 
+class ProcessProxy(object):
+
+    def __init__(self, task, *args, **kwargs):
+        # self.task, self.args, self.kwargs = task, args, kwargs
+        self.out_q = multiprocessing.Queue()
+        self.runner = multiprocessing.Process(target=
+                                      lambda: self.out_q.put(self.run(task, *args, **kwargs)))
+
+    def start(self):
+        self.runner.start()
+        return self
+
+    def run(self, task, *args, **kwargs):
+        sys.stdout, sys.stderr = StringIO(), StringIO()
+        try:
+            return (task(*args, **kwargs), None, sys.stdout.getvalue(), sys.stderr.getvalue())
+        except BaseException as e:
+            return (None, e, sys.stdout.getvalue(), sys.stderr.getvalue())
+
+    def join(self):
+        self.runner.join()
+        try:
+            return self.out_q.get_nowait()
+        except Queue.Empty:
+            return (None, None, '', '')
+        finally:
+            self.out_q.close()
+
+
 class FabricManager(object):
     """
-    class in charge of running fabric_navitia tasks on a running platform
+    Class in charge of running fabric_navitia tasks on a running platform.
+    This is the only object you usually have to import in a test file.
     """
     def __init__(self, platform):
         self.platform = platform
         self.platform.register_manager('fabric', self)
-        try:
-            fabric = reload(fabric)
-        except NameError:
-            import fabric
-        from fabric import api
         self.api = api
         self.env = api.env
-        # wait until platforms are ready
-        self.platform.docker_exec('pwd')
 
     @staticmethod
     def get_object(obj_spec):
@@ -90,12 +118,27 @@ class FabricManager(object):
         self.platform.user = getattr(self.env, 'default_ssh_user', 'root')
         for k, v in write.iteritems():
             setattr(self.env, k, v)
+        self.platform.wait_sshd()
         return self
 
     def execute(self, task, *args, **kwargs):
         cmd = self.get_object(get_fabric_task(task))
         print(utils.magenta("Running task " + get_task_description(cmd)))
         return self.api.execute(cmd, *args, **kwargs)
+
+    def execute_forked(self, task, *args, **kwargs):
+        """ Execute fabric task in an forked process. This allows fabric to do anything
+            it likes, including crashing and resetting the SSH channels to the platform.
+        :return: a dictionary {'value': the value returned by the fabric task or None,
+                               'exception': exception raised or None,
+                               'stdout': the stdout produced during the execution of the task,
+                               'stderr': the stderr produced during the execution of the task
+                              }
+        """
+        # TODO close the SSH connections
+        cmd = self.get_object(get_fabric_task(task))
+        print(utils.magenta("Running task (fabric forked) " + get_task_description(cmd)))
+        return ProcessProxy(self.api.execute, cmd, *args, **kwargs).start().join()
 
     def get_version(self, role='eng'):
         return self.execute('utils.get_version', role).values()[0]

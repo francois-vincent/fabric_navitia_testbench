@@ -2,6 +2,7 @@
 
 from collections import Mapping
 import os
+import time
 
 import utils
 
@@ -133,6 +134,16 @@ def get_version(app, container):
         return None
 
 
+def wait_running_sshd(container, timeout=1):
+    count, step = timeout, 0.2
+    while count > 0:
+        if '/usr/sbin/sshd -D' in docker_exec(container, 'ps ax'):
+            return True
+        time.sleep(step)
+        count -= step
+    return False
+
+
 class PlatformManager(object):
     """
     Class in charge of bringing up a running platform and performing other docker magic
@@ -253,6 +264,14 @@ class PlatformManager(object):
             if found < expected:
                 raise RuntimeError("Expecting {} running containers, found {}".format(expected, found))
         return self.hosts
+
+    def wait_sshd(self, host=None, raises=True):
+        for container in [self.containers[host]] if host else self.containers.itervalues():
+            if not wait_running_sshd(container):
+                if raises:
+                    raise RuntimeError('Container {} has no running sshd'.format(container))
+                return
+        return True
 
     def ssh(self, cmd, host=None):
         """ this method requires that an ssh daemon is running on the target

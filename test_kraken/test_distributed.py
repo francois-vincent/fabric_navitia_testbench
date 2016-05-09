@@ -1,7 +1,5 @@
 # encoding: utf-8
 
-import pytest
-
 from ..test_common import skipifdev
 from ..test_common.test_kraken import (_test_stop_restart_kraken,
                                        _test_stop_start_apache,
@@ -104,18 +102,16 @@ def test_test_all_krakens_no_wait(distributed, capsys):
 
 
 # @skipifdev
-# This test is temporarily removed because I don't know yet how to restart fabric connections
-# that are closed when an exception is raised below
-# def test_check_dead_instances(distributed, capsys):
-#     platform, fabric = distributed
-#     with pytest.raises(SystemExit):
-#         fabric.execute('component.kraken.check_dead_instances')
-#     out, err = capsys.readouterr()
-#     assert 'The threshold of allowed dead instances is exceeded: ' \
-#            'Found 6 dead instances out of 6.' in out
+def test_check_dead_instances(distributed):
+    platform, fabric = distributed
+    value, exception, stdout, stderr = fabric.execute_forked('component.kraken.check_dead_instances')
+    assert value is None
+    assert isinstance(exception, SystemExit)
+    assert 'The threshold of allowed dead instances is exceeded: ' \
+           'Found 6 dead instances out of 6.' in stdout
 
 
-# @skipifdev
+@skipifdev
 def test_create_remove_eng_instance(distributed, capsys):
     platform, fabric = distributed
     fabric.get_object('instance.add_instance')('toto', 'passwd',
