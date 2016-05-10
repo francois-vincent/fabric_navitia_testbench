@@ -84,6 +84,10 @@ def docker_start(container):
     return utils.Command('docker start {}'.format(container)).returncode
 
 
+def docker_commit(container, image):
+    return utils.command('docker commit {} {}'.format(container, image))
+
+
 def get_container_ip(container, raises=False):
     cmd = utils.Command("docker inspect --format '{{ .NetworkSettings.IPAddress }}' %s" % container)
     if raises and cmd.stderr:
@@ -186,14 +190,22 @@ class PlatformManager(object):
         1- ensures images are created, otherwise, creates them
         2- ensures containers are created and started otherwise creates and/or starts them
         """
-        self.reset(reset)
-        self.build_images()
+        self.build_images(reset)
         self.run_containers()
         return self
 
     def reset(self, reset='rm_image'):
+        """ Resets a platform
+        :param reset: 'uproot': remove platform images and any dependant container
+                      'rm_image': remove platform images and containers
+                      'rm_container': remove and stop platform containers
+                      'stop': stop platform containers
+        """
+        if not reset:
+            return self
         if reset == 'uproot':
             self.images_delete(uproot=True)
+            return self
         if reset in ('stop', 'rm_container', 'rm_image'):
             self.containers_stop()
         if reset in ('rm_container', 'rm_image'):
@@ -211,8 +223,11 @@ class PlatformManager(object):
                 docker_build(os.path.join(self.images_rootdir, 'images'), image, image)
         return self
 
+    def images_exist(self):
+        return self.images_names == set(self.get_real_images())
+
     def run_containers(self, reset=None):
-        if reset == 'rm_image':
+        if reset in ('rm_image', 'uproot'):
             raise RuntimeError("Can't remove images before running containers")
         self.reset(reset)
         running = self.get_real_containers()
@@ -343,14 +358,40 @@ class PlatformManager(object):
             return get_version(app, self.containers[host])
         return {k: get_version(app, v) for k, v in self.containers.iteritems()}
 
-    def commit_containers(self):
-        """
-        commited container have a convention naming: image_platform_container-name
-        """
+    def commit_containers(self, images, stop=True):
+        if stop:
+            self.containers_stop()
+        for k, v in self.containers.iteritems():
+            docker_commit(v, images[k])
         return self
 
     def docker_diff(self):
-        """
-        get docker diff
-        """
         # TODO this could only be useful if krakens could start automatically...
+        pass
+
+
+class DeployedPlatformManager(PlatformManager):
+    """ Class that manages the deployed platform, essentially through specific images and
+        containers name, plus a setup function constructing images and containers.
+        Here the subclass PlatformManager is used as a mixin (constructor not called).
+    """
+    def __init__(self, platform, distri):
+        self.platform = platform
+        self.distri = distri
+        self.platform_name = platform.platform
+        self.images = {k: '-'.join((v, self.platform_name)) for k, v in self.platform.images.iteritems()}
+        self.containers = {k: '-'.join((v, 'deployed', k)) for k, v in self.images.iteritems()}
+        self.images_names = set(self.images.values())
+        self.containers_names = self.containers.values()
+
+    def setup(self, reset=None):
+        if not self.images_exist():
+            self.platform.setup(reset)
+            fabric = self.get_manager('fabric')
+            fabric.set_platform(distrib=self.distri)
+            fabric.deploy_from_scratch(True)
+            self.commit_containers(self.images)
+        return self
+
+    def start_processes(self):
+        pass

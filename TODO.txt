@@ -33,3 +33,5 @@
     (plus redémarrer les process non supervisés)
 
 #20 appeler les tests pour debian7 et 8 avec fixture(params=[...])
+
+#21 changer Command().returncode en command()
