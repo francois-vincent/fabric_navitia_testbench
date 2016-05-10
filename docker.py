@@ -362,6 +362,7 @@ class PlatformManager(object):
         if stop:
             self.containers_stop()
         for k, v in self.containers.iteritems():
+            print(utils.yellow("commit {} to {}".format(v, images[k])))
             docker_commit(v, images[k])
         return self
 
@@ -372,7 +373,7 @@ class PlatformManager(object):
 
 class DeployedPlatformManager(PlatformManager):
     """ Class that manages the deployed platform, essentially through specific images and
-        containers name, plus a setup function constructing images and containers.
+        containers names, plus a setup function constructing these images and containers.
         Here the subclass PlatformManager is used as a mixin (constructor not called).
     """
     def __init__(self, platform, distri):

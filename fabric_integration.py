@@ -57,7 +57,6 @@ def get_task_description(task):
 class ProcessProxy(object):
 
     def __init__(self, task, *args, **kwargs):
-        # self.task, self.args, self.kwargs = task, args, kwargs
         self.out_q = multiprocessing.Queue()
         self.runner = multiprocessing.Process(target=
                                       lambda: self.out_q.put(self.run(task, *args, **kwargs)))
@@ -128,13 +127,13 @@ class FabricManager(object):
         return self.api.execute(cmd, *args, **kwargs)
 
     def execute_forked(self, task, *args, **kwargs):
-        """ Execute fabric task in an forked process. This allows fabric to do anything
+        """ Execute fabric task in a forked process. This allows fabric to do anything
             it likes, including crashing and resetting the SSH channels to the platform.
-        :return: a dictionary {'value': the value returned by the fabric task or None,
-                               'exception': exception raised or None,
-                               'stdout': the stdout produced during the execution of the task,
-                               'stderr': the stderr produced during the execution of the task
-                              }
+        :return: a tuple (value returned by the fabric task or None,
+                          exception raised or None,
+                          stdout produced during the execution of the task,
+                          stderr produced during the execution of the task
+                         )
         """
         # TODO close the SSH connections ?
         cmd = self.get_object(get_fabric_task(task))
