@@ -20,13 +20,13 @@ def test_classes():
 
     # Check that platform is initialized
     assert platform.images_rootdir == DOCKER_ROOTDIR
-    assert platform.platform == 'navitia'
+    assert platform.platform_name == 'navitia'
     assert platform.images == {'h1': 'debian8', 'h2': 'debian8'}
     assert platform.parameters == {'h1': '--param 0'}
     assert platform.containers == {'h1': 'debian8-navitia-h1', 'h2': 'debian8-navitia-h2'}
     assert set(platform.containers_names) == {'debian8-navitia-h1', 'debian8-navitia-h2'}
     assert platform.images_names == {'debian8'}
-    assert set(platform.hosts) == {'h1', 'h2'}
+    assert set(platform.hosts_ips) == {'h1', 'h2'}
 
     # check that fabric manager is initialized
     assert platform.managers['fabric'].platform == platform

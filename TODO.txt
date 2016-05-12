@@ -35,3 +35,11 @@
 #20 appeler les tests pour debian7 et 8 avec fixture(params=[...])
 
 #21 changer Command().returncode en command()
+
+#22 rajouter qq self tests
+
+#23 implémenter docker_exec pour user != root (sudo optionel) ?
+
+#24 implémenter ssh pour user != root (sudo optionel) ?
+
+#25 tester l'orchestration de redémarrage des kraken (devop-413)

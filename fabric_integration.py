@@ -88,10 +88,13 @@ class FabricManager(object):
     This is the only object you usually have to import in a test file.
     """
     def __init__(self, platform):
-        self.platform = platform
-        self.platform.register_manager('fabric', self)
         self.api = api
         self.env = api.env
+        self.register_platform(platform)
+
+    def register_platform(self, platform):
+        self.platform = platform
+        self.platform.register_manager('fabric', self)
 
     @staticmethod
     def get_object(obj_spec):
@@ -112,8 +115,8 @@ class FabricManager(object):
         fabfile.env.platforms > tests_integration.platforms.common > tests_integration.platforms.<selected_platform>
         :param write: dictionary to inject into fabric.api.env
         """
-        module = import_module('.platforms.' + self.platform.platform, ROOT)
-        getattr(module, self.platform.platform)(**self.platform.get_hosts(True))
+        module = import_module('.platforms.' + self.platform.platform_name, ROOT)
+        getattr(module, self.platform.platform_name)(**self.platform.get_hosts(True))
         self.platform.user = getattr(self.env, 'default_ssh_user', 'root')
         for k, v in write.iteritems():
             setattr(self.env, k, v)

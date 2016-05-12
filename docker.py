@@ -162,12 +162,12 @@ class PlatformManager(object):
         :param parameters: dictionary/pair iterable of container-name:iterable of strings
         """
         self.images_rootdir = ROOTDIR
-        self.platform = platform
+        self.platform_name = platform
+        self.platform = self
         self.user = user
         self.images = images if isinstance(images, Mapping) else dict(images)
         self.parameters = parameters if isinstance(parameters, Mapping) else dict(parameters)
-        self.containers = {k: '-'.join((v, self.platform, k)) for k, v in self.images.iteritems()}
-        self.hosts = self.images.keys()
+        self.containers = {k: '-'.join((v, self.platform_name, k)) for k, v in self.images.iteritems()}
         self.images_names = set(self.images.values())
         self.containers_names = self.containers.values()
         self.managers = {}
@@ -272,13 +272,13 @@ class PlatformManager(object):
            an exception if the number of running containers differs from the number
            of defined containers.
         """
-        self.hosts = {k: get_container_ip(v) for k, v in self.containers.iteritems()}
+        self.hosts_ips = {k: get_container_ip(v) for k, v in self.containers.iteritems()}
         if raises:
-            expected = len(self.containers)
-            found = len([x for x in self.hosts.itervalues() if x])
-            if found < expected:
+            if not all(self.hosts_ips.values()):
+                expected = len(self.containers)
+                found = len([x for x in self.hosts_ips.itervalues() if x])
                 raise RuntimeError("Expecting {} running containers, found {}".format(expected, found))
-        return self.hosts
+        return self.hosts_ips
 
     def wait_sshd(self, host=None, raises=True):
         for container in [self.containers[host]] if host else self.containers.itervalues():
@@ -366,6 +366,22 @@ class PlatformManager(object):
             docker_commit(v, images[k])
         return self
 
+    def start_services(self, *args, **kwargs):
+        """ start services on the platform
+        :param args: sequence of services to start on all hosts.
+        :param kwargs: key=host, value=sequence of services, or
+                       key=service, value=sequence of hosts.
+        """
+        for service in args:
+            self.docker_exec('service {} start'.format(service))
+        hosts_keys = set(kwargs).issubset(set(self.images.keys()))
+        for k, v in kwargs.iteritems():
+            for x in v:
+                if hosts_keys:
+                    self.docker_exec('service {} start'.format(x), k)
+                else:
+                    self.docker_exec('service {} start'.format(k), x)
+
     def docker_diff(self):
         # TODO this could only be useful if krakens could start automatically...
         pass
@@ -378,21 +394,24 @@ class DeployedPlatformManager(PlatformManager):
     """
     def __init__(self, platform, distri):
         self.platform = platform
+        self.platform_name = platform.platform_name
+        self.user = platform.user
+        self.parameters = platform.parameters
         self.distri = distri
-        self.platform_name = platform.platform
-        self.images = {k: '-'.join((v, self.platform_name)) for k, v in self.platform.images.iteritems()}
-        self.containers = {k: '-'.join((v, 'deployed', k)) for k, v in self.images.iteritems()}
+        self.images = {k: '-'.join((v, self.platform_name, k)) for k, v in platform.images.iteritems()}
+        self.containers = {k: '-'.join((v, 'deployed')) for k, v in self.images.iteritems()}
         self.images_names = set(self.images.values())
         self.containers_names = self.containers.values()
+        self.managers = {}
 
-    def setup(self, reset=None):
+    def setup(self):
+        fabric = self.platform.get_manager('fabric')
         if not self.images_exist():
-            self.platform.setup(reset)
-            fabric = self.get_manager('fabric')
+            self.platform.setup()
             fabric.set_platform(distrib=self.distri)
             fabric.deploy_from_scratch(True)
-            self.commit_containers(self.images)
+            self.platform.commit_containers(self.images)
+        self.run_containers('rm_container')
+        fabric.register_platform(self)
+        fabric.set_platform(distrib=self.distri)
         return self
-
-    def start_processes(self):
-        pass

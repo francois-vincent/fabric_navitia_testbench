@@ -9,6 +9,9 @@ from fabric_integration import FabricManager
 def pytest_addoption(parser):
     parser.addoption('--dev', action='store_true',
                      help="run only non decorated tests (default: run all tests")
+    parser.addoption('--reset', action='store_true',
+                     help="force reset image, ie force a full navitia redeploy "
+                          "(default: reuse existing image")
     parser.addoption('--distri', action='store', default='debian8',
                      help="select a linux distribution (default debian8)")
 
@@ -53,7 +56,7 @@ def duplicated_undeployed():
 
 def setup_platform(platform, distri):
     fabric = FabricManager(platform)
-    deployed_platform = DeployedPlatformManager(platform, distri).setup('rm_container')
+    deployed_platform = DeployedPlatformManager(platform, distri).setup()
     return deployed_platform, fabric
 
 
@@ -62,6 +65,7 @@ def single():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('single', {'host': distri})
     deployed_platform, fabric = setup_platform(platform, distri)
+    deployed_platform.start_services('tyr_worker', 'tyr_beat', 'default')
     yield deployed_platform, fabric
     deployed_platform.reset('rm_container')
 
@@ -71,8 +75,13 @@ def distributed():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
     deployed_platform, fabric = setup_platform(platform, distri)
+    deployed_platform.start_services(
+        ('tyr_worker',),
+        host1=('tyr_beat', 'kraken_fr-nw', 'kraken_us-wa', 'kraken_fr-npdc'),
+        host2=('kraken_fr-ne-amiens', 'kraken_fr-idf', 'kraken_fr-cen')
+    )
     yield deployed_platform, fabric
-    deployed_platform.reset('rm_container')
+    # deployed_platform.reset('rm_container')
 
 
 @pytest.yield_fixture(scope='function')
@@ -80,6 +89,10 @@ def duplicated():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('duplicated', {'host1': distri, 'host2': distri})
     deployed_platform, fabric = setup_platform(platform, distri)
+    deployed_platform.start_services()
+    deployed_platform.start_services(
+        ('kraken_fr-nw', 'kraken_us-wa', 'kraken_fr-npdc', 'kraken_fr-ne-amiens', 'kraken_fr-idf', 'kraken_fr-cen'),
+        host1=('tyr_beat',)
+    )
     yield deployed_platform, fabric
     deployed_platform.reset('rm_container')
-

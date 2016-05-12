@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+import time
+
 from ..test_common import skipifdev
 from ..test_common.test_kraken import (_test_stop_restart_kraken,
                                        _test_stop_start_apache,
@@ -80,25 +82,26 @@ def test_stop_start_apache(distributed):
 def test_test_kraken_nowait_nofail(distributed, capsys):
     _test_test_kraken_nowait_nofail(distributed, capsys,
                                     map={'host1': {'us-wa'}, 'host2': {'fr-ne-amiens'}}, ret_val=False)
+# TODO https://ci.navitia.io/job/deploy_navitia_on_internal/35/console
 
 
 @skipifdev
-def test_get_no_data_instances(distributed, capsys):
+def test_get_no_data_instances(distributed):
     platform, fabric = distributed
-    fabric.execute('component.kraken.get_no_data_instances')
-    out, err = capsys.readouterr()
+    value, exception, stdout, stderr = fabric.execute_forked('component.kraken.get_no_data_instances')
+    assert stdout.count('NOTICE: ') == len(fabric.env.instances)
     for instance in fabric.env.instances:
-        assert "NOTICE: no data for {}, append it to exclude list".format(instance) in out
+        assert "NOTICE: no data for {}, append it to exclude list".format(instance) in stdout
     assert set(fabric.env.excluded_instances) == set(fabric.env.instances)
 
 
-@skipifdev
-def test_test_all_krakens_no_wait(distributed, capsys):
+# @skipifdev
+def test_test_all_krakens_no_wait(distributed):
     platform, fabric = distributed
-    fabric.execute('test_all_krakens')
-    out, err = capsys.readouterr()
+    value, exception, stdout, stderr = fabric.execute_forked('test_all_krakens')
+    assert stdout.count('WARNING: ') == len(fabric.env.instances)
     for instance in fabric.env.instances:
-        assert "WARNING: instance {} has no loaded data".format(instance) in out
+        assert "WARNING: instance {} has no loaded data".format(instance) in stdout
 
 
 # @skipifdev
@@ -111,25 +114,23 @@ def test_check_dead_instances(distributed):
            'Found 6 dead instances out of 6.' in stdout
 
 
-@skipifdev
-def test_create_remove_eng_instance(distributed, capsys):
+# @skipifdev
+def test_create_remove_eng_instance(distributed):
     platform, fabric = distributed
     fabric.get_object('instance.add_instance')('toto', 'passwd',
                        zmq_socket_port=30004, zmq_server=fabric.env.host1_ip)
-    fabric.execute('create_eng_instance', 'toto')
-    out, err = capsys.readouterr()
-    try:
-        assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host1']) in out
-        assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1')
-        assert platform.path_exists('/etc/init.d//kraken_toto', 'host1')
-        assert platform.path_exists('/var/log/kraken/toto.log', 'host1')
-        assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host2', negate=True)
-        assert platform.path_exists('/etc/init.d//kraken_toto', 'host2', negate=True)
-        assert platform.path_exists('/var/log/kraken/toto.log', 'host2', negate=True)
-        assert set(get_running_krakens(platform, 'host1')) == {'toto'} | nominal_krakens['host1']
-        assert set(get_running_krakens(platform, 'host2')) == nominal_krakens['host2']
-    finally:
-        fabric.execute('remove_kraken_instance', 'toto', purge_logs=True)
+    value, exception, stdout, stderr = fabric.execute_forked('create_eng_instance', 'toto')
+    assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host1']) in stdout
+    assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1')
+    assert platform.path_exists('/etc/init.d//kraken_toto', 'host1')
+    assert platform.path_exists('/var/log/kraken/toto.log', 'host1')
+    assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host2', negate=True)
+    assert platform.path_exists('/etc/init.d//kraken_toto', 'host2', negate=True)
+    assert platform.path_exists('/var/log/kraken/toto.log', 'host2', negate=True)
+    assert set(get_running_krakens(platform, 'host1')) == {'toto'} | nominal_krakens['host1']
+    assert set(get_running_krakens(platform, 'host2')) == nominal_krakens['host2']
+
+    fabric.execute('remove_kraken_instance', 'toto', purge_logs=True)
     assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1', negate=True)
     assert platform.path_exists('/etc/init.d//kraken_toto', 'host1', negate=True)
     assert platform.path_exists('/var/log/kraken/toto.log', 'host1', negate=True)

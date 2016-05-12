@@ -21,3 +21,4 @@ def distributed(host1, host2):
     add_instance("fr-cen", "passwd", zmq_socket_port=30000, zmq_server=host2)
     add_instance("us-wa", "passwd", zmq_socket_port=30023, is_free=True, zmq_server='localhost')
     add_instance("fr-npdc", "passwd", zmq_socket_port=30018, zmq_server='localhost')
+
