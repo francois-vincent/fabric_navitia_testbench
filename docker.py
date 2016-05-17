@@ -383,7 +383,7 @@ class PlatformManager(object):
                     self.docker_exec('service {} start'.format(k), x)
 
     def docker_diff(self):
-        # TODO this could only be useful if krakens could start automatically...
+        # TODO this could only be useful if krakens were started in Dockerfile
         pass
 
 
@@ -404,10 +404,11 @@ class DeployedPlatformManager(PlatformManager):
         self.containers_names = self.containers.values()
         self.managers = {}
 
-    def setup(self):
+    def setup(self, reset=None):
         fabric = self.platform.get_manager('fabric')
+        self.reset(reset)
         if not self.images_exist():
-            self.platform.setup()
+            self.platform.setup('rm_container')
             fabric.set_platform(distrib=self.distri)
             fabric.deploy_from_scratch(True)
             self.platform.commit_containers(self.images)

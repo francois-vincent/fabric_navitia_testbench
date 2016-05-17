@@ -134,7 +134,7 @@ pattern = re.compile('/srv/kraken/(.+?)/kraken')
 
 
 def get_running_krakens(platform, host):
-    cols = extract_column(platform.ssh('ps ax | grep kraken | grep -v grep', host=host), -1)
+    cols = extract_column(platform.docker_exec('ps ax | grep kraken | grep -v grep', host=host), -1)
     return [pattern.findall(col)[0] for col in cols]
 
 

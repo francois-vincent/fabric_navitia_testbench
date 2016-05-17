@@ -18,7 +18,7 @@ def pytest_addoption(parser):
 
 # ===================     UNDEPLOYED PLATFORMS FIXTURES     =======================
 
-def setup_platform_undeployed(platform, distri):
+def setup_platform(platform, distri):
     # build an image ready for Navitia2, then run it
     platform.setup('rm_container')
     # then set up the fabric platform
@@ -29,7 +29,7 @@ def setup_platform_undeployed(platform, distri):
 def single_undeployed():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('single', {'host': distri})
-    platform, fabric = setup_platform_undeployed(platform, distri)
+    platform, fabric = setup_platform(platform, distri)
     yield platform, fabric
     platform.reset('rm_container')
 
@@ -38,7 +38,7 @@ def single_undeployed():
 def distributed_undeployed():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
-    platform, fabric = setup_platform_undeployed(platform, distri)
+    platform, fabric = setup_platform(platform, distri)
     yield platform, fabric
     platform.reset('rm_container')
 
@@ -47,16 +47,16 @@ def distributed_undeployed():
 def duplicated_undeployed():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('duplicated', {'host1': distri, 'host2': distri})
-    platform, fabric = setup_platform_undeployed(platform, distri)
+    platform, fabric = setup_platform(platform, distri)
     yield platform, fabric
     platform.reset('rm_container')
 
 
 # ===================     DEPLOYED PLATFORMS FIXTURES     =======================
 
-def setup_platform(platform, distri):
+def setup_platform_deployed(platform, distri):
     fabric = FabricManager(platform)
-    deployed_platform = DeployedPlatformManager(platform, distri).setup()
+    deployed_platform = DeployedPlatformManager(platform, distri).setup(pytest.config.getoption('--reset') and 'uproot')
     return deployed_platform, fabric
 
 
@@ -64,7 +64,7 @@ def setup_platform(platform, distri):
 def single():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('single', {'host': distri})
-    deployed_platform, fabric = setup_platform(platform, distri)
+    deployed_platform, fabric = setup_platform_deployed(platform, distri)
     deployed_platform.start_services('tyr_worker', 'tyr_beat', 'default')
     yield deployed_platform, fabric
     deployed_platform.reset('rm_container')
@@ -74,7 +74,7 @@ def single():
 def distributed():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
-    deployed_platform, fabric = setup_platform(platform, distri)
+    deployed_platform, fabric = setup_platform_deployed(platform, distri)
     deployed_platform.start_services(
         ('tyr_worker',),
         host1=('tyr_beat', 'kraken_fr-nw', 'kraken_us-wa', 'kraken_fr-npdc'),
@@ -88,7 +88,7 @@ def distributed():
 def duplicated():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('duplicated', {'host1': distri, 'host2': distri})
-    deployed_platform, fabric = setup_platform(platform, distri)
+    deployed_platform, fabric = setup_platform_deployed(platform, distri)
     deployed_platform.start_services()
     deployed_platform.start_services(
         ('kraken_fr-nw', 'kraken_us-wa', 'kraken_fr-npdc', 'kraken_fr-ne-amiens', 'kraken_fr-idf', 'kraken_fr-cen'),

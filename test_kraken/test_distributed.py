@@ -75,36 +75,42 @@ def test_require_all_krakens_started(distributed):
 
 @skipifdev
 def test_stop_start_apache(distributed):
+    time.sleep(5)
     _test_stop_start_apache(distributed, ('host1', 'host2'))
 
 
 @skipifdev
 def test_test_kraken_nowait_nofail(distributed, capsys):
+    time.sleep(15)
     _test_test_kraken_nowait_nofail(distributed, capsys,
                                     map={'host1': {'us-wa'}, 'host2': {'fr-ne-amiens'}}, ret_val=False)
 # TODO https://ci.navitia.io/job/deploy_navitia_on_internal/35/console
 
 
 @skipifdev
-def test_get_no_data_instances(distributed):
+def test_get_no_data_instances(distributed, capsys):
     platform, fabric = distributed
-    value, exception, stdout, stderr = fabric.execute_forked('component.kraken.get_no_data_instances')
+    time.sleep(15)
+    fabric.execute('component.kraken.get_no_data_instances')
+    stdout, stderr = capsys.readouterr()
     assert stdout.count('NOTICE: ') == len(fabric.env.instances)
     for instance in fabric.env.instances:
         assert "NOTICE: no data for {}, append it to exclude list".format(instance) in stdout
     assert set(fabric.env.excluded_instances) == set(fabric.env.instances)
 
 
-# @skipifdev
+@skipifdev
 def test_test_all_krakens_no_wait(distributed):
     platform, fabric = distributed
+    # wait for krakens to be fully started
+    time.sleep(15)
     value, exception, stdout, stderr = fabric.execute_forked('test_all_krakens')
     assert stdout.count('WARNING: ') == len(fabric.env.instances)
     for instance in fabric.env.instances:
         assert "WARNING: instance {} has no loaded data".format(instance) in stdout
 
 
-# @skipifdev
+@skipifdev
 def test_check_dead_instances(distributed):
     platform, fabric = distributed
     value, exception, stdout, stderr = fabric.execute_forked('component.kraken.check_dead_instances')
@@ -114,12 +120,13 @@ def test_check_dead_instances(distributed):
            'Found 6 dead instances out of 6.' in stdout
 
 
-# @skipifdev
+@skipifdev
 def test_create_remove_eng_instance(distributed):
     platform, fabric = distributed
     fabric.get_object('instance.add_instance')('toto', 'passwd',
                        zmq_socket_port=30004, zmq_server=fabric.env.host1_ip)
     value, exception, stdout, stderr = fabric.execute_forked('create_eng_instance', 'toto')
+    time.sleep(5)
     assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host1']) in stdout
     assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1')
     assert platform.path_exists('/etc/init.d//kraken_toto', 'host1')

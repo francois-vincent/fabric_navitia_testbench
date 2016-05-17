@@ -46,15 +46,15 @@ def _test_stop_start_apache(platform, hosts):
     fabric.execute('require_all_krakens_started')
 
     for host in hosts:
-        assert 'apache2' in extract_column(platform.ssh('ps -A', host), -1, 1)
+        assert 'apache2' in extract_column(platform.docker_exec('ps -A', host), -1, 1)
     platform.ssh('service apache2 stop')
     time.sleep(1)
     for host in hosts:
-        assert 'apache2' not in extract_column(platform.ssh('ps -A', host), -1, 1)
+        assert 'apache2' not in extract_column(platform.docker_exec('ps -A', host), -1, 1)
     fabric.execute('require_monitor_kraken_started')
     time.sleep(1)
     for host in hosts:
-        assert 'apache2' in extract_column(platform.ssh('ps -A', host), -1, 1)
+        assert 'apache2' in extract_column(platform.docker_exec('ps -A', host), -1, 1)
 
 
 def _test_test_kraken_nowait_nofail(platform, capsys, map, ret_val):
