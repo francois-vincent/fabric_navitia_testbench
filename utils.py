@@ -91,6 +91,7 @@ def cd(folder):
 
 
 COMMAND_DEBUG = None
+# COMMAND_DEBUG = 'Debug: '
 
 
 class Command(object):
@@ -145,10 +146,20 @@ def command(cmd):
     return subprocess.call(cmd, shell=True)
 
 
-def ssh(user, host, cmd):
+def ssh(user, host, cmd, raises=True):
+    """ Executes ssh on host if host's ~/.ssh/authorized_keys contains images/keys/unsecure_key.pub
+    :param user: usually 'root'
+    :param host: host's ip
+    :param cmd: command to to execute on host (beware quotes)
+    :param raises: if True, will raise if return code is nonzero
+    :return: string: command's stdout
+    """
     with cd(ROOTDIR):
-        return Command('ssh -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
-                       '{user}@{host} {cmd}'.format(**locals())).stdout.strip()
+        ssh = Command('ssh -o StrictHostKeyChecking=no -i images/keys/unsecure_key '
+                       '{user}@{host} {cmd}'.format(**locals()))
+        if raises and ssh.returncode:
+            raise RuntimeError("Command '{}' on host {} returned an error:\n{}".format(cmd, host, ssh.stderr))
+        return ssh.stdout.strip()
 
 
 def scp(source, dest, host, user):
