@@ -120,7 +120,7 @@ class FabricManager(object):
         for k, v in write.iteritems():
             setattr(self.env, k, v)
         # wait sshd daemons running on host platform
-        self.platform.wait_sshd()
+        self.platform.wait_process('/usr/sbin/sshd')
         return self
 
     def execute(self, task, *args, **kwargs):

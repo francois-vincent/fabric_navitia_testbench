@@ -141,7 +141,7 @@ class Command(object):
 
 def command(cmd):
     """ Use this function if you only want the return code
-        you can't retrieve stdout nor stdin
+        you can't retrieve stdout nor stderr
     """
     return subprocess.call(cmd, shell=True)
 
@@ -150,7 +150,7 @@ def ssh(user, host, cmd, raises=True):
     """ Executes ssh on host if host's ~/.ssh/authorized_keys contains images/keys/unsecure_key.pub
     :param user: usually 'root'
     :param host: host's ip
-    :param cmd: command to to execute on host (beware quotes)
+    :param cmd: command to execute on host (beware quotes)
     :param raises: if True, will raise if return code is nonzero
     :return: string: command's stdout
     """

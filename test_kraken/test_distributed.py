@@ -73,13 +73,13 @@ def test_require_all_krakens_started(distributed):
                              )
 
 
-# @skipifdev
+@skipifdev
 def test_stop_start_apache(distributed):
     time.sleep(2)
     _test_stop_start_apache(distributed, ('host1', 'host2'))
 
 
-@skipifdev
+# @skipifdev
 def test_test_kraken_nowait_nofail(distributed, capsys):
     time.sleep(15)
     _test_test_kraken_nowait_nofail(distributed, capsys,
@@ -90,7 +90,7 @@ def test_test_kraken_nowait_nofail(distributed, capsys):
 @skipifdev
 def test_get_no_data_instances(distributed, capsys):
     platform, fabric = distributed
-    time.sleep(15)
+    time.sleep(2)
     fabric.execute('component.kraken.get_no_data_instances')
     stdout, stderr = capsys.readouterr()
     assert stdout.count('NOTICE: ') == len(fabric.env.instances)
@@ -99,7 +99,7 @@ def test_get_no_data_instances(distributed, capsys):
     assert set(fabric.env.excluded_instances) == set(fabric.env.instances)
 
 
-@skipifdev
+# @skipifdev
 def test_test_all_krakens_no_wait(distributed):
     platform, fabric = distributed
     # wait for krakens to be fully started
@@ -126,7 +126,7 @@ def test_create_remove_eng_instance(distributed):
     fabric.get_object('instance.add_instance')('toto', 'passwd',
                        zmq_socket_port=30004, zmq_server=fabric.env.host1_ip)
     value, exception, stdout, stderr = fabric.execute_forked('create_eng_instance', 'toto')
-    time.sleep(5)
+    time.sleep(2)
     assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host1']) in stdout
     assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1')
     assert platform.path_exists('/etc/init.d//kraken_toto', 'host1')

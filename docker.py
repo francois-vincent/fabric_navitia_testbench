@@ -138,10 +138,10 @@ def get_version(app, container):
         return None
 
 
-def wait_running_sshd(container, timeout=1):
+def wait_running_command(cmd, container, timeout=1):
     count, step = timeout, 0.2
     while count > 0:
-        if '/usr/sbin/sshd -D' in docker_exec(container, 'ps ax'):
+        if cmd in docker_exec(container, 'ps ax'):
             return True
         time.sleep(step)
         count -= step
@@ -280,11 +280,11 @@ class PlatformManager(object):
                 raise RuntimeError("Expecting {} running containers, found {}".format(expected, found))
         return self.hosts_ips
 
-    def wait_sshd(self, host=None, raises=True):
-        for container in [self.containers[host]] if host else self.containers.itervalues():
-            if not wait_running_sshd(container):
+    def wait_process(self, proc, raises=True):
+        for container in self.containers.itervalues():
+            if not wait_running_command(proc, container):
                 if raises:
-                    raise RuntimeError('Container {} has no running sshd'.format(container))
+                    raise RuntimeError("Container {} has no running '{}'".format(container, proc))
                 return
         return True
 
@@ -372,6 +372,7 @@ class PlatformManager(object):
         :param kwargs: key=host, value=sequence of services, or
                        key=service, value=sequence of hosts.
         """
+        wait = kwargs.pop('wait', None)
         for service in args:
             self.docker_exec('service {} start'.format(service))
         hosts_keys = set(kwargs).issubset(set(self.images.keys()))
@@ -381,6 +382,8 @@ class PlatformManager(object):
                     self.docker_exec('service {} start'.format(x), k)
                 else:
                     self.docker_exec('service {} start'.format(k), x)
+        if wait:
+            self.wait_process(wait)
 
     def docker_diff(self):
         # TODO this could only be useful if krakens were started in Dockerfile
