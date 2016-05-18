@@ -64,7 +64,7 @@ def docker_build(context, image, tag=None):
     cmd = 'docker build -f {}/Dockerfile{} .'.format(image, ' -t {}'.format(tag) if tag else '')
     print(utils.yellow(cmd))
     with utils.cd(context):
-        return utils.Command(cmd).returncode
+        return utils.command(cmd, show='Build: ')
 
 
 def docker_run(image, container=None, host=None, parameters=None):
@@ -77,11 +77,11 @@ def docker_run(image, container=None, host=None, parameters=None):
         cmd += parameters + ' '
     cmd += image
     print(utils.yellow(cmd))
-    return utils.Command(cmd).returncode
+    return utils.command(cmd)
 
 
 def docker_start(container):
-    return utils.Command('docker start {}'.format(container)).returncode
+    return utils.command('docker start {}'.format(container))
 
 
 def docker_commit(container, image):

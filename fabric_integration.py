@@ -25,7 +25,6 @@ if not fabric_navitia_path:
     raise RuntimeError("Could not find module 'fabric_navitia', please set PYTHONPATH accordingly")
 
 ROOT = os.path.basename(os.path.dirname(__file__))
-print(utils.red(ROOT))
 
 
 with utils.cd(fabric_navitia_path):
@@ -138,7 +137,6 @@ class FabricManager(object):
                           stderr produced during the execution of the task
                          )
         """
-        # TODO close the SSH connections ?
         cmd = self.get_object(get_fabric_task(task))
         print(utils.magenta("Running task (fabric forked) " + get_task_description(cmd)))
         return ProcessProxy(self.api.execute, cmd, *args, **kwargs).start().join()

@@ -3,7 +3,10 @@
 from contextlib import contextmanager
 import os.path
 import re
+import StringIO
 import subprocess
+import sys
+import threading
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -87,21 +90,49 @@ def cd(folder):
         os.chdir(old_folder)
 
 
+COMMAND_DEBUG = None
+
+
 class Command(object):
     """ Use this class if you want to wait and get shell command output
     """
-    def __init__(self, cmd):
+    def __init__(self, cmd, show=COMMAND_DEBUG):
+        self.show = show
         self.p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if show is not None:
+            self.out = StringIO.StringIO()
+            self.err = StringIO.StringIO()
+            t_out = threading.Thread(target=self.out_reader)
+            t_err = threading.Thread(target=self.err_reader)
+            t_out.start()
+            t_err.start()
         self.p.wait()
+        if show is not None:
+            t_out.join()
+            t_err.join()
         self.returncode = self.p.returncode
 
     @property
     def stdout(self):
+        if self.show:
+            return self.out.getvalue()
         return self.p.stdout.read()
 
     @property
     def stderr(self):
+        if self.show:
+            return self.err.getvalue()
         return self.p.stderr.read()
+
+    def out_reader(self):
+        for line in iter(self.p.stdout.readline, ''):
+            sys.stdout.write(self.show + line)
+            self.out.write(line)
+
+    def err_reader(self):
+        for line in iter(self.p.stderr.readline, ''):
+            sys.stderr.write(self.show + 'Error: ' + line)
+            self.err.write(line)
 
     def stdout_column(self, column, start=0):
         return extract_column(self.stdout, column, start)

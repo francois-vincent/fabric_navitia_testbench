@@ -47,12 +47,12 @@ def _test_stop_start_apache(platform, hosts):
 
     for host in hosts:
         assert 'apache2' in extract_column(platform.docker_exec('ps -A', host), -1, 1)
-    platform.ssh('service apache2 stop')
-    time.sleep(1)
+    print(platform.ssh('service apache2 stop'))
+    time.sleep(10)
     for host in hosts:
         assert 'apache2' not in extract_column(platform.docker_exec('ps -A', host), -1, 1)
     fabric.execute('require_monitor_kraken_started')
-    time.sleep(1)
+    time.sleep(2)
     for host in hosts:
         assert 'apache2' in extract_column(platform.docker_exec('ps -A', host), -1, 1)
 

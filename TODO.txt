@@ -1,12 +1,4 @@
 
-#0 montrer les sorties du build
-
-#2 les containers restartés peuvent avoir des ip incohérentes avec les configurations.
-   utiliser --link ??
-   imposer l'ordre ?? non car les adresses peuvent être prises par d'autres containers entre temps
-   imposer l'ip ?
-   interdire le restart des containers pour les systèmes multiples ?
-
 #4 créer un LB (HAProxy) ??
 
 #7 option faire le ménage après les tests ? (--clean)
@@ -27,14 +19,7 @@
 
 #17 envisager VM + vagrant pour debian8+systemd
 
-#18 tests setup: recréer les containers à chaque test
-
-#19 tests deployed: utiliser une image commitée et recréer les containers à chaque test
-    (plus redémarrer les process non supervisés)
-
 #20 appeler les tests pour debian7 et 8 avec fixture(params=[...])
-
-#21 changer Command().returncode en command()
 
 #22 rajouter qq self tests
 
@@ -43,3 +28,5 @@
 #24 implémenter ssh pour user != root (sudo optionel) ?
 
 #25 tester l'orchestration de redémarrage des kraken (devop-413)
+
+#26 cf TODO kraken/test_distributed/#87

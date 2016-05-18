@@ -17,3 +17,7 @@ option --dev will skip all tests decorated with @skipifdev.
 
 If you want to rebuild an image, just remove it (docker rmi <image>),
 it will be automatically rebuilt when running any test depending on it.
+
+
+WARNING:
+Make sure that file images/keys/unsecure_keys has permissions set to 0600

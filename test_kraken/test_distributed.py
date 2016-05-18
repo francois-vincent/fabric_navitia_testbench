@@ -73,9 +73,9 @@ def test_require_all_krakens_started(distributed):
                              )
 
 
-@skipifdev
+# @skipifdev
 def test_stop_start_apache(distributed):
-    time.sleep(5)
+    time.sleep(2)
     _test_stop_start_apache(distributed, ('host1', 'host2'))
 
 
