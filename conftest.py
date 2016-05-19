@@ -82,7 +82,7 @@ def distributed():
         wait='/srv/kraken'
     )
     yield deployed_platform, fabric
-    # deployed_platform.reset('rm_container')
+    deployed_platform.reset('rm_container')
 
 
 @pytest.yield_fixture(scope='function')

@@ -1,9 +1,9 @@
 # encoding: utf-8
 
 from contextlib import contextmanager
+import cStringIO
 import os.path
 import re
-import StringIO
 import subprocess
 import sys
 import threading
@@ -101,8 +101,8 @@ class Command(object):
         self.show = show
         self.p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if show is not None:
-            self.out = StringIO.StringIO()
-            self.err = StringIO.StringIO()
+            self.out = cStringIO.StringIO()
+            self.err = cStringIO.StringIO()
             t_out = threading.Thread(target=self.out_reader)
             t_err = threading.Thread(target=self.err_reader)
             t_out.start()

@@ -5,6 +5,8 @@
 # good practice: test modules should only access fabric and fabric_navitia this way
 
 
+from collections import defaultdict
+from contextlib import contextmanager
 from cStringIO import StringIO
 from importlib import import_module
 import multiprocessing
@@ -55,7 +57,8 @@ def get_task_description(task):
 
 class ProcessProxy(object):
 
-    def __init__(self, task, *args, **kwargs):
+    def __init__(self, data, task, *args, **kwargs):
+        self.data = data
         self.out_q = multiprocessing.Queue()
         self.runner = multiprocessing.Process(target=
                                       lambda: self.out_q.put(self.run(task, *args, **kwargs)))
@@ -67,16 +70,16 @@ class ProcessProxy(object):
     def run(self, task, *args, **kwargs):
         sys.stdout, sys.stderr = StringIO(), StringIO()
         try:
-            return (task(*args, **kwargs), None, sys.stdout.getvalue(), sys.stderr.getvalue())
+            return task(*args, **kwargs), None, sys.stdout.getvalue(), sys.stderr.getvalue(), dict(self.data)
         except BaseException as e:
-            return (None, e, sys.stdout.getvalue(), sys.stderr.getvalue())
+            return None, e, sys.stdout.getvalue(), sys.stderr.getvalue(), dict(self.data)
 
     def join(self):
         self.runner.join()
         try:
             return self.out_q.get_nowait()
         except Queue.Empty:
-            return (None, None, '', '')
+            return None, None, '', '', {}
         finally:
             self.out_q.close()
 
@@ -96,17 +99,50 @@ class FabricManager(object):
         self.platform.register_manager('fabric', self)
 
     @staticmethod
-    def get_object(obj_spec):
+    def get_object(reference):
         try:
-            if '.' in obj_spec:
-                module, task = obj_spec.rsplit('.', 1)
+            if '.' in reference:
+                module, task = reference.rsplit('.', 1)
                 module = import_module('fabfile.' + module)
                 return getattr(module, task)
             else:
                 module = import_module('fabfile')
-                return getattr(module, obj_spec)
+                return getattr(module, reference)
         except ImportError as e:
-            raise RuntimeError("Can't find object {} in fabfile {}/fabfile: [{}]".format(obj_spec, fabric_navitia_path, e))
+            raise RuntimeError("Can't find object {} in fabfile {}/fabfile: [{}]".format(reference, fabric_navitia_path, e))
+
+    def _call_tracker(self, func, call):
+        def wrapped(*args, **kwargs):
+            self._call_tracker_data[func.__name__].append((args, kwargs, api.env.get('host_string', None)))
+            if call:
+                return func(*args, **kwargs)
+        return wrapped
+
+    @contextmanager
+    def set_call_tracker(self, *references):
+        """ Set call trackers on fabric tasks, with capability to skip task call.
+            each call tracked by a set call tracker updates a dictionary:
+                key=function_name,
+                value=list of tuples=(args, kwargs, env.host_string)
+        :param references: tuple of reference of fabric_navitia tasks, e.g. 'component.kraken.setup_kraken'
+               if the reference starts with '-', the task is tracked but not executed.
+        """
+        self._call_tracker_objects = []
+        self._call_tracker_data = defaultdict(list)
+        for reference in references:
+            call = True
+            if reference[0] == '-':
+                reference = reference[1:]
+                call = False
+            obj = self.get_object(reference)
+            self._call_tracker_objects.append((obj, obj.wrapped))
+            obj.wrapped = self._call_tracker(obj.wrapped, call)
+        yield self.get_call_tracker_data
+        for obj, wrapped in self._call_tracker_objects:
+            obj.wrapped = wrapped
+
+    def get_call_tracker_data(self):
+        return self._call_tracker_data
 
     def set_platform(self, **write):
         """ Sets fabric.api.env attributes from the selected platform
@@ -139,7 +175,9 @@ class FabricManager(object):
         """
         cmd = self.get_object(get_fabric_task(task))
         print(utils.magenta("Running task (fabric forked) " + get_task_description(cmd)))
-        return ProcessProxy(self.api.execute, cmd, *args, **kwargs).start().join()
+        ret = ProcessProxy(self._call_tracker_data, self.api.execute, cmd, *args, **kwargs).start().join()
+        self._call_tracker_data = ret[-1]
+        return ret[:-1]
 
     def get_version(self, role='eng'):
         return self.execute('utils.get_version', role).values()[0]

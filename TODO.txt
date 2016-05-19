@@ -30,5 +30,3 @@
 #25 tester l'orchestration de redémarrage des kraken (devop-413)
 
 #26 cf TODO kraken/test_distributed/#87
-
-#27 find a better way than sleep() to wait for krakens start (kraken/test_distributed/#84

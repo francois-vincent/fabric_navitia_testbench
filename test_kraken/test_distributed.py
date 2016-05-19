@@ -11,6 +11,7 @@ from ..test_common.test_kraken import (_test_stop_restart_kraken,
 from ..utils import get_running_krakens
 
 
+@skipifdev
 def test_kraken_setup(distributed):
     distributed, fabric = distributed
     for krak in ('us-wa', 'fr-nw', 'fr-npdc'):
@@ -31,6 +32,7 @@ def test_kraken_setup(distributed):
 
 nominal_krakens = {'host1': {'us-wa', 'fr-nw', 'fr-npdc'}, 'host2': {'fr-ne-amiens', 'fr-idf', 'fr-cen'}}
 krakens_after_stop = {'host1': {'fr-nw', 'fr-npdc'}, 'host2': {'fr-idf', 'fr-cen'}}
+instances_names = {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'}
 
 
 @skipifdev
@@ -76,10 +78,14 @@ def test_require_all_krakens_started(distributed):
 @skipifdev
 def test_stop_start_apache(distributed):
     time.sleep(2)
-    _test_stop_start_apache(distributed, ('host1', 'host2'))
+    _, fabric = distributed
+    with fabric.set_call_tracker('component.kraken.require_kraken_started') as data:
+        _test_stop_start_apache(distributed, ('host1', 'host2'))
+        # task require_kraken_started is called for each instance
+        assert set((x[0][0].name for x in data()['require_kraken_started'])) == instances_names
 
 
-# @skipifdev
+@skipifdev
 def test_test_kraken_nowait_nofail(distributed, capsys):
     time.sleep(15)
     _test_test_kraken_nowait_nofail(distributed, capsys,
@@ -99,7 +105,7 @@ def test_get_no_data_instances(distributed, capsys):
     assert set(fabric.env.excluded_instances) == set(fabric.env.instances)
 
 
-# @skipifdev
+@skipifdev
 def test_test_all_krakens_no_wait(distributed):
     platform, fabric = distributed
     # wait for krakens to be fully started
@@ -120,12 +126,24 @@ def test_check_dead_instances(distributed):
            'Found 6 dead instances out of 6.' in stdout
 
 
-@skipifdev
+# @skipifdev
 def test_create_remove_eng_instance(distributed):
     platform, fabric = distributed
     fabric.get_object('instance.add_instance')('toto', 'passwd',
                        zmq_socket_port=30004, zmq_server=fabric.env.host1_ip)
-    value, exception, stdout, stderr = fabric.execute_forked('create_eng_instance', 'toto')
+
+    with fabric.set_call_tracker('component.kraken.update_eng_instance_conf') as data:
+        value, exception, stdout, stderr = fabric.execute_forked('create_eng_instance', 'toto')
+        # there is only one call to update_eng_instance_conf
+        assert len(data()['update_eng_instance_conf']) == 1
+        host_string = 'root@{}'.format(platform.get_hosts()['host1'])
+        # first argument is the newly created instance
+        assert data()['update_eng_instance_conf'][0][0][0].name == 'toto'
+        # second argument is the host string
+        assert data()['update_eng_instance_conf'][0][0][1] == host_string
+        # host string is also set
+        assert data()['update_eng_instance_conf'][0][-1] == host_string
+
     time.sleep(2)
     assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host1']) in stdout
     assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1')
