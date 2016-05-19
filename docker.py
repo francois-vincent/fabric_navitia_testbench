@@ -64,7 +64,7 @@ def docker_build(context, image, tag=None):
     cmd = 'docker build -f {}/Dockerfile{} .'.format(image, ' -t {}'.format(tag) if tag else '')
     print(utils.yellow(cmd))
     with utils.cd(context):
-        return utils.command(cmd, show='Build: ')
+        return utils.Command(cmd, show='Build: ').returncode
 
 
 def docker_run(image, container=None, host=None, parameters=None):
