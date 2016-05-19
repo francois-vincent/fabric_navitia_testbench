@@ -29,4 +29,4 @@
 
 #25 tester l'orchestration de redémarrage des kraken (devop-413)
 
-#26 cf TODO kraken/test_distributed/#87
+#26 cf TODO kraken/test_distributed/test_test_kraken_nowait_nofail

@@ -14,6 +14,7 @@ def env_common(tyr, ed, kraken, jormun):
     env.key_filename = SSH_KEY_FILE
     env.use_ssh_config = True
     env.use_syslog = False
+    env.use_load_balancer = False
 
     env.roledefs = {
         'tyr':  tyr_ssh,

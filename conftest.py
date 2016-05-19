@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import time
 import pytest
 
 from docker import PlatformManager, DeployedPlatformManager
@@ -65,6 +66,7 @@ def single():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('single', {'host': distri})
     deployed_platform, fabric = setup_platform_deployed(platform, distri)
+    time.sleep(1)
     deployed_platform.start_services('tyr_worker', 'tyr_beat', 'default', wait='/srv/kraken')
     yield deployed_platform, fabric
     deployed_platform.reset('rm_container')
@@ -75,8 +77,9 @@ def distributed():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('distributed', {'host1': distri, 'host2': distri})
     deployed_platform, fabric = setup_platform_deployed(platform, distri)
+    time.sleep(1)
     deployed_platform.start_services(
-        ('tyr_worker',),
+        'tyr_worker',
         host1=('tyr_beat', 'kraken_fr-nw', 'kraken_us-wa', 'kraken_fr-npdc'),
         host2=('kraken_fr-ne-amiens', 'kraken_fr-idf', 'kraken_fr-cen'),
         wait='/srv/kraken'
@@ -90,8 +93,10 @@ def duplicated():
     distri = pytest.config.getoption('--distri')
     platform = PlatformManager('duplicated', {'host1': distri, 'host2': distri})
     deployed_platform, fabric = setup_platform_deployed(platform, distri)
+    time.sleep(1)
     deployed_platform.start_services(
-        ('kraken_fr-nw', 'kraken_us-wa', 'kraken_fr-npdc', 'kraken_fr-ne-amiens', 'kraken_fr-idf', 'kraken_fr-cen'),
+        'tyr_worker',
+        'kraken_fr-nw', 'kraken_us-wa', 'kraken_fr-npdc', 'kraken_fr-ne-amiens', 'kraken_fr-idf', 'kraken_fr-cen',
         host1=('tyr_beat',),
         wait='/srv/kraken'
     )

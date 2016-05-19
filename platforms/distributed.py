@@ -12,7 +12,6 @@ def distributed(host1, host2):
 
     env.postgresql_database_host = 'localhost'
     env.use_zmq_socket_file = False
-    env.use_syslog = False
     env.rabbitmq_host = host1
 
     add_instance("fr-nw", "passwd", zmq_socket_port=30006, is_free=True, zmq_server='localhost')
