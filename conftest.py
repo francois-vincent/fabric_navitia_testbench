@@ -20,6 +20,7 @@ def pytest_addoption(parser):
 # ===================     UNDEPLOYED PLATFORMS FIXTURES     =======================
 
 def setup_platform(platform, distri):
+    print()
     # build an image ready for Navitia2, then run it
     platform.setup('rm_container')
     # then set up the fabric platform
@@ -56,6 +57,7 @@ def duplicated_undeployed():
 # ===================     DEPLOYED PLATFORMS FIXTURES     =======================
 
 def setup_platform_deployed(platform, distri):
+    print()
     fabric = FabricManager(platform)
     deployed_platform = DeployedPlatformManager(platform, distri).setup(pytest.config.getoption('--reset') and 'uproot')
     return deployed_platform, fabric
@@ -85,7 +87,7 @@ def distributed():
         wait='/srv/kraken'
     )
     yield deployed_platform, fabric
-    deployed_platform.reset('rm_container')
+    # deployed_platform.reset('rm_container')
 
 
 @pytest.yield_fixture(scope='function')

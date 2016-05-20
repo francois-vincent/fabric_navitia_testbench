@@ -93,6 +93,7 @@ class FabricManager(object):
         self.api = api
         self.env = api.env
         self.register_platform(platform)
+        self._call_tracker_data = {}
 
     def register_platform(self, platform):
         self.platform = platform
@@ -121,7 +122,7 @@ class FabricManager(object):
     @contextmanager
     def set_call_tracker(self, *references):
         """ Set call trackers on fabric tasks, with capability to skip task call.
-            each call tracked by a set call tracker updates a dictionary:
+            Each call tracked by a set call tracker updates a dictionary:
                 key=function_name,
                 value=list of tuples=(args, kwargs, env.host_string)
         :param references: tuple of reference of fabric_navitia tasks, e.g. 'component.kraken.setup_kraken'
@@ -135,8 +136,11 @@ class FabricManager(object):
                 reference = reference[1:]
                 call = False
             obj = self.get_object(reference)
-            self._call_tracker_objects.append((obj, obj.wrapped))
-            obj.wrapped = self._call_tracker(obj.wrapped, call)
+            old_wrapped = obj.wrapped
+            self._call_tracker_objects.append((obj, old_wrapped))
+            obj.wrapped = self._call_tracker(old_wrapped, call)
+            for k, v in vars(old_wrapped).iteritems():
+                setattr(obj.wrapped, k, v)
         yield self.get_call_tracker_data
         for obj, wrapped in self._call_tracker_objects:
             obj.wrapped = wrapped
