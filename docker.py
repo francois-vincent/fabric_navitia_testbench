@@ -101,8 +101,8 @@ def docker_exec(container, cmd, user=None, stdout_only=True, return_code_only=Fa
         return utils.command(docker_cmd)
     dock = utils.Command(docker_cmd)
     if raises and dock.returncode:
-        raise RuntimeError("Error while executing <{}>: [{}]".
-                           format(docker_cmd, dock.stderr.strip() or dock.returncode))
+        raise RuntimeError(
+            "Error while executing <{}>: [{}]".format(docker_cmd, dock.stderr.strip() or dock.returncode))
     if stdout_only:
         return dock.stdout.strip()
     return dock
@@ -155,6 +155,7 @@ class PlatformManager(object):
     then check existence or runs the containers.
     Optionally, stops and commits the containers.
     """
+
     def __init__(self, platform, images, parameters=(), user='root'):
         """
         :param platform: string
@@ -296,7 +297,7 @@ class PlatformManager(object):
         if host:
             return utils.ssh(self.user, get_container_ip(self.containers[host]), cmd)
         return {k: utils.ssh(self.user, get_container_ip(v), cmd) for k, v in self.containers.iteritems()}
-    
+
     def scp(self, source, dest, host=None):
         """ this method requires that an ssh daemon is running on the target
             and that an authorized_keys file is set with a rsa plubilc key,
@@ -395,6 +396,7 @@ class DeployedPlatformManager(PlatformManager):
         containers names, plus a setup function constructing these images and containers.
         Here the subclass PlatformManager is used as a mixin (constructor not called).
     """
+
     def __init__(self, platform, distri):
         self.platform = platform
         self.platform_name = platform.platform_name

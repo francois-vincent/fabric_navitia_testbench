@@ -28,7 +28,6 @@ if not fabric_navitia_path:
 
 ROOT = os.path.basename(os.path.dirname(__file__))
 
-
 with utils.cd(fabric_navitia_path):
     fabric_tasks = utils.Command('fab no_such_task').stdout_column(0, 2)
 
@@ -56,12 +55,11 @@ def get_task_description(task):
 
 
 class ProcessProxy(object):
-
     def __init__(self, data, task, *args, **kwargs):
         self.data = data
         self.out_q = multiprocessing.Queue()
-        self.runner = multiprocessing.Process(target=
-                                      lambda: self.out_q.put(self.run(task, *args, **kwargs)))
+        self.runner = multiprocessing.Process(
+            target=lambda: self.out_q.put(self.run(task, *args, **kwargs)))
 
     def start(self):
         self.runner.start()
@@ -89,6 +87,7 @@ class FabricManager(object):
     Class in charge of running fabric_navitia tasks on a running platform.
     This is the only object you usually have to import in a test file.
     """
+
     def __init__(self, platform):
         self.api = api
         self.env = api.env
@@ -110,13 +109,15 @@ class FabricManager(object):
                 module = import_module('fabfile')
                 return getattr(module, reference)
         except ImportError as e:
-            raise RuntimeError("Can't find object {} in fabfile {}/fabfile: [{}]".format(reference, fabric_navitia_path, e))
+            raise RuntimeError(
+                "Can't find object {} in fabfile {}/fabfile: [{}]".format(reference, fabric_navitia_path, e))
 
     def _call_tracker(self, func, call):
         def wrapped(*args, **kwargs):
             self._call_tracker_data[func.__name__].append((args, kwargs, api.env.get('host_string', None)))
             if call:
                 return func(*args, **kwargs)
+
         return wrapped
 
     @contextmanager
