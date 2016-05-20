@@ -7,15 +7,14 @@ from common import env_common
 
 def duplicated(host1, host2):
     env.host1_ip, env.host2_ip = host1, host2
-    env_common([host1, host2], [host1], [host1, host2], [host1, host2])
+    env_common([host1, host2], [host1], [host1, host2], [host1])
     env.name = 'duplicated'
-    env.use_load_balancer = True
-    env.eng_hosts_1 = env.rolesdef[:1]
-    env.eng_hosts_2 = env.rolesdef[1:]
+    env.eng_hosts_1 = env.roledefs['eng'][:1]
+    env.eng_hosts_2 = env.roledefs['eng'][1:]
 
     env.postgresql_database_host = 'localhost'
     env.use_zmq_socket_file = False
-    env.zmq_server = 'vippriv-dummy' # does not exist
+    env.zmq_server = 'localhost'
     env.rabbitmq_host = host1
 
     add_instance("fr-nw", "passwd", zmq_socket_port=30006, is_free=True, zmq_server=(host1, host2))

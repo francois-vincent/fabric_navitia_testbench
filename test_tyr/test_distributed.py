@@ -31,5 +31,7 @@ def test_create_remove_tyr_instance(distributed):
     assert stdout.count("Executing task 'remove_tyr_instance'") == 2
     assert platform.path_exists('/etc/tyr.d/toto.ini', negate=True)
     assert platform.path_exists('/var/log/tyr/toto.log', negate=True)
+    # restart_tyr_worker is called twice (good)
     assert len(data()['restart_tyr_worker']) == 2
+    # restart_tyr_beat is called twice (not so good)
     assert len(data()['restart_tyr_beat']) == 2
