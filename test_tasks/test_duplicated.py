@@ -50,16 +50,6 @@ def test_upgrade_kraken_restricted(duplicated):
     assert set((x[0][0].name for x in data()['restart_kraken_on_host'])) == instances_names
 
 
-@skipifdev
-def test_fix_setuptools(duplicated):
-    platform, fabric = duplicated
-
-    with fabric.set_call_tracker('tasks.fix_setuptools',) as data:
-        fabric.execute('tasks.fix_setuptools')
-
-    assert set((x[2] for x in data()['fix_setuptools'])) == set(fabric.env.roledefs['eng'])
-
-
 # @skipifdev
 def test_upgrade_all_load_balancer(duplicated):
     platform, fabric = duplicated
