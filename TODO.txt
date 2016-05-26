@@ -27,8 +27,12 @@
 
 #24 implémenter ssh pour user != root (sudo optionel) ?
 
-#25 tester l'orchestration de redémarrage des kraken (devop-413)
-
 #26 cf TODO kraken/test_distributed/test_test_kraken_nowait_nofail
 
 #27 rendre indépendants les tests et la plateforme de test
+
+#28 sortir si le build ou le deploy échoue
+
+#29 set_call_tracker sur une non-task
+
+#30 faire une plateforme avec 6 machines: 2 tyr+db, 2 jormun, 2 kraken
