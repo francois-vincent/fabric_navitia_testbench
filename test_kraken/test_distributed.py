@@ -156,6 +156,7 @@ def test_create_remove_eng_instance(distributed):
     assert data()['update_eng_instance_conf'][0][-1] == host_string
 
     time.sleep(2)
+    assert 'INFO: kraken toto instance is starting on {}'.format(platform.get_hosts()['host1']) in stdout
     assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host1']) in stdout
     assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1')
     assert platform.path_exists('/etc/init.d//kraken_toto', 'host1')

@@ -36,3 +36,5 @@
 #29 set_call_tracker sur une non-task
 
 #30 faire une plateforme avec 6 machines: 2 tyr+db, 2 jormun, 2 kraken
+
+#31 fix test_redistribue_kraken_swap to work with execute_forked

@@ -152,7 +152,7 @@ def test_create_remove_eng_instance(duplicated):
     assert set(get_running_krakens(platform, 'host2')) == nominal_krakens['host2']
 
 
-# @skipifdev
+@skipifdev
 def test_restart_all_krakens(duplicated):
     platform, fabric = duplicated
 
@@ -180,3 +180,81 @@ def test_restart_all_krakens(duplicated):
                             .format(host2, instance)) == 1
         assert stdout.count('OK: instance {} has correct values:'.format(instance)) == 2
 
+
+@skipifdev
+def test_redistribue_kraken_swap(duplicated, capsys):
+    platform, fabric = duplicated
+    add_instance = fabric.get_object('instance.add_instance')
+
+    # set instance on one eng machine
+    add_instance('toto', 'passwd', zmq_socket_port=30004, zmq_server=fabric.env.host1_ip)
+    fabric.execute('create_eng_instance', 'toto')
+
+    # change zmq_server to other eng machine
+    add_instance('toto', 'passwd', zmq_socket_port=30004, zmq_server=fabric.env.host2_ip)
+    # TODO fix that, it freezes !
+    # with fabric.set_call_tracker('component.kraken.create_eng_instance',
+    #                              'component.kraken.remove_kraken_instance') as data:
+    #     value, exception, stdout, stderr = fabric.execute_forked('redistribute_kraken', 'toto')
+    fabric.execute('redeploy_kraken', 'toto')
+
+    stdout, stderr = capsys.readouterr()
+    assert 'INFO: kraken toto instance is starting on {}'.format(platform.get_hosts()['host2']) in stdout
+    assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host2']) in stdout
+    assert 'INFO: removing kraken instance toto from {}'.format(platform.get_hosts()['host1']) in stdout
+    assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host2')
+    assert platform.path_exists('/etc/init.d//kraken_toto', 'host2')
+    assert platform.path_exists('/var/log/kraken/toto.log', 'host2')
+    assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1', negate=True)
+    assert platform.path_exists('/etc/init.d//kraken_toto', 'host1', negate=True)
+    assert platform.path_exists('/var/log/kraken/toto.log', 'host1', negate=True)
+    # check that moved kraken is running on host1 but not host2
+    time.sleep(2)
+    assert set(get_running_krakens(platform, 'host1')) == nominal_krakens['host1']
+    assert set(get_running_krakens(platform, 'host2')) == {'toto'} | nominal_krakens['host2']
+
+
+@skipifdev
+def test_redistribue_kraken_reduce(duplicated, capsys):
+    platform, fabric = duplicated
+    add_instance = fabric.get_object('instance.add_instance')
+
+    # set instance on all eng machines
+    add_instance('toto', 'passwd', zmq_socket_port=30004)
+    fabric.execute('create_eng_instance', 'toto')
+
+    # change zmq_server to other eng machine
+    add_instance('toto', 'passwd', zmq_socket_port=30004, zmq_server=fabric.env.host2_ip)
+    # TODO fix that, it freezes !
+    # with fabric.set_call_tracker('component.kraken.create_eng_instance',
+    #                              'component.kraken.remove_kraken_instance') as data:
+    #     value, exception, stdout, stderr = fabric.execute_forked('redistribute_kraken', 'toto')
+    fabric.execute('redeploy_kraken', 'toto')
+
+    stdout, stderr = capsys.readouterr()
+    assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host2']) in stdout
+    assert 'INFO: removing kraken instance toto from {}'.format(platform.get_hosts()['host1']) in stdout
+    assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host2')
+    assert platform.path_exists('/etc/init.d//kraken_toto', 'host2')
+    assert platform.path_exists('/var/log/kraken/toto.log', 'host2')
+    assert platform.path_exists('/srv/kraken/toto/kraken.ini', 'host1', negate=True)
+    assert platform.path_exists('/etc/init.d//kraken_toto', 'host1', negate=True)
+    assert platform.path_exists('/var/log/kraken/toto.log', 'host1', negate=True)
+    # check that moved kraken is running on host1 but not host2
+    time.sleep(2)
+    assert set(get_running_krakens(platform, 'host1')) == nominal_krakens['host1']
+    assert set(get_running_krakens(platform, 'host2')) == {'toto'} | nominal_krakens['host2']
+
+
+# @skipifdev
+def test_redistribue_kraken_reduce(duplicated, capsys):
+    platform, fabric = duplicated
+
+    fabric.execute('redeploy_all_krakens')
+
+    stdout, stderr = capsys.readouterr()
+    host1 = platform.get_hosts()['host1']
+    host2 = platform.get_hosts()['host2']
+    for instance in fabric.env.instances:
+        assert 'INFO: kraken {} instance is running on {}'.format(instance, host1) in stdout
+        assert 'INFO: kraken {} instance is running on {}'.format(instance, host2) in stdout
