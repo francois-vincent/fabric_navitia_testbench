@@ -19,7 +19,7 @@
 
 #17 envisager VM + vagrant pour debian8+systemd
 
-#20 appeler les tests pour debian7 et 8 avec fixture(params=[...])
+#20 appeler les tests pour debian7 et 8 avec fixture(params=[...]): NON
 
 #22 rajouter qq self tests
 
@@ -35,6 +35,8 @@
 
 #29 set_call_tracker sur une non-task
 
-#30 faire une plateforme avec 6 machines: 2 tyr+db, 2 jormun, 2 kraken
+#30 faire une plateforme avec 4 machines: 2 tyr(2)+db+jormun(2), 2 kraken
 
 #31 fix test_redistribue_kraken_swap to work with execute_forked
+
+#32 refaire les factories: 1 pour les plateformes non déployées, 1 pour les plateformes déployées

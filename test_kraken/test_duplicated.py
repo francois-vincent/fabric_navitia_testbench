@@ -195,7 +195,7 @@ def test_redistribue_kraken_swap(duplicated, capsys):
     # TODO fix that, it freezes !
     # with fabric.set_call_tracker('component.kraken.create_eng_instance',
     #                              'component.kraken.remove_kraken_instance') as data:
-    #     value, exception, stdout, stderr = fabric.execute_forked('redistribute_kraken', 'toto')
+    #     value, exception, stdout, stderr = fabric.execute_forked('redeploy_kraken', 'toto')
     fabric.execute('redeploy_kraken', 'toto')
 
     stdout, stderr = capsys.readouterr()
@@ -228,7 +228,7 @@ def test_redistribue_kraken_reduce(duplicated, capsys):
     # TODO fix that, it freezes !
     # with fabric.set_call_tracker('component.kraken.create_eng_instance',
     #                              'component.kraken.remove_kraken_instance') as data:
-    #     value, exception, stdout, stderr = fabric.execute_forked('redistribute_kraken', 'toto')
+    #     value, exception, stdout, stderr = fabric.execute_forked('redeploy_kraken', 'toto')
     fabric.execute('redeploy_kraken', 'toto')
 
     stdout, stderr = capsys.readouterr()
