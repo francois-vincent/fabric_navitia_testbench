@@ -1,0 +1,16 @@
+rendre indépendants les tests de fabric_naitia et la plateforme de test
+
+faire le conftest.py des selftests
+
+dans le frarmework
+  le moteur (utils, docker, fabric_integration)
+  les images et ptforms de selftests
+  les images debian8 et debian7 canoniques
+  le clés ssh
+  skipifdev qui est mal placé
+  déplacer get_running_krakens
+
+dans les test fabric:
+  images
+  platforms
+  tests

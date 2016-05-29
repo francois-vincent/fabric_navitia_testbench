@@ -29,7 +29,7 @@
 
 #26 cf TODO kraken/test_distributed/test_test_kraken_nowait_nofail
 
-#27 rendre indépendants les tests et la plateforme de test
+#27 rendre indépendants les tests de fabric_naitia et la plateforme de test
 
 #28 sortir si le build ou le deploy échoue
 
