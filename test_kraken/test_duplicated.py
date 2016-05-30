@@ -182,7 +182,7 @@ def test_restart_all_krakens(duplicated):
 
 
 @skipifdev
-def test_redistribue_kraken_swap(duplicated, capsys):
+def test_redeploy_kraken_swap(duplicated, capsys):
     platform, fabric = duplicated
     add_instance = fabric.get_object('instance.add_instance')
 
@@ -215,7 +215,7 @@ def test_redistribue_kraken_swap(duplicated, capsys):
 
 
 @skipifdev
-def test_redistribue_kraken_reduce(duplicated, capsys):
+def test_redeploy_kraken_reduce(duplicated, capsys):
     platform, fabric = duplicated
     add_instance = fabric.get_object('instance.add_instance')
 
@@ -247,7 +247,7 @@ def test_redistribue_kraken_reduce(duplicated, capsys):
 
 
 # @skipifdev
-def test_redistribue_kraken_reduce(duplicated, capsys):
+def test_redeploy_all_krakens(duplicated, capsys):
     platform, fabric = duplicated
 
     fabric.execute('redeploy_all_krakens')

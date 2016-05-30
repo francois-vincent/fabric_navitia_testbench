@@ -40,3 +40,5 @@
 #31 fix test_redistribue_kraken_swap to work with execute_forked
 
 #32 refaire les factories: 1 pour les plateformes non déployées, 1 pour les plateformes déployées
+
+#33 refactor and relocate and selftest class ProcessProxy
