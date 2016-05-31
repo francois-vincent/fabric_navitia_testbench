@@ -57,7 +57,7 @@ def test_upgrade_kraken_restricted(duplicated):
     assert set((x[0][0].name for x in data()['restart_kraken_on_host'])) == instances_names
 
 
-@skipifdev
+# @skipifdev
 def test_upgrade_all_load_balancer(duplicated):
     platform, fabric = duplicated
     fabric.env.use_load_balancer = True
