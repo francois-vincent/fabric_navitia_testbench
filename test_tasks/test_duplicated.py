@@ -1,11 +1,16 @@
 # encoding: utf-8
 
+import os.path
 import time
 
+import requests
+
 from ..test_common import skipifdev
+from ..utils import get_running_krakens
 
+ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
-SHOW_CALL_TRACKER_DATA = True
+SHOW_CALL_TRACKER_DATA = False
 instances_names = {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'}
 
 
@@ -57,7 +62,7 @@ def test_upgrade_kraken_restricted(duplicated):
     assert set((x[0][0].name for x in data()['restart_kraken_on_host'])) == instances_names
 
 
-# @skipifdev
+@skipifdev
 def test_upgrade_all_load_balancer(duplicated):
     platform, fabric = duplicated
     fabric.env.use_load_balancer = True
@@ -104,3 +109,41 @@ def test_upgrade_all_load_balancer(duplicated):
     assert len(data()['upgrade_jormungandr']) == 2
     # only one phase
     assert len(data()['upgrade_tyr']) == 1
+
+
+# @skipifdev
+def test_remove_instance(duplicated):
+    platform, fabric = duplicated
+
+    # postgres is really long to warm up !
+    time.sleep(15)
+
+    # update instance model and resource, load and execute migration (before merge of Navitia2 PR)
+    # platform.scp('/home/francois/CanalTP/navitia/source/navitiacommon/navitiacommon/models.py',
+    #              '/usr/lib/python2.7/dist-packages/navitiacommon/', 'host1')
+    # platform.scp('/home/francois/CanalTP/navitia/source/tyr/migrations/versions/d1d12707b76_add_discarded_instance.py',
+    #              '/usr/share/tyr/migrations/versions/', 'host1')
+    # platform.scp('/home/francois/CanalTP/navitia/source/tyr/tyr/resources.py',
+    #              '/usr/lib/python2.7/dist-packages/tyr/', 'host1')
+    # platform.docker_exec('/bin/sh -c "cd /srv/tyr && TYR_CONFIG_FILE=/srv/tyr/settings.py python manage.py db upgrade"', 'host1')
+
+    # set up a server for tyr API on host1 and start it
+    platform.scp(os.path.join(ROOTDIR, 'tyr-api.conf'), '/etc/apache2/conf-enabled/tyr-api.conf', 'host1')
+    platform.docker_exec('service apache2 restart', 'host1')
+
+    value, exception, stdout, stderr = fabric.execute_forked('tasks.remove_instance', 'us-wa')
+    assert stdout.count("Executing task 'remove_postgresql_database'") == 1
+    assert stdout.count("Executing task 'remove_ed_instance'") == 2
+    assert stdout.count("Executing task 'remove_tyr_instance'") == 2
+    assert stdout.count("Executing task 'remove_jormungandr_instance'") == 1
+
+    assert requests.get('http://{}/v0/instances/us-wa'.format(fabric.env.tyr_url)).json() == []
+    assert set(get_running_krakens(platform, 'host1')) == instances_names.difference(['us-wa'])
+    assert set(get_running_krakens(platform, 'host2')) == instances_names.difference(['us-wa'])
+    assert platform.path_exists('/srv/ed/us-wa', negate=True)
+    assert platform.path_exists('/srv/ed/data/us-wa', negate=True)
+    assert platform.path_exists('/srv/ed/data/us-wa/backup', negate=True)
+    assert platform.path_exists('/etc/tyr.d/us-wa.ini', negate=True)
+    assert platform.path_exists('/etc/init.d/kraken_us-wa', negate=True)
+    assert platform.path_exists('/srv/kraken/us-wa', negate=True)
+    assert platform.path_exists('/etc/jormungandr.d/us-wa.json', negate=True)

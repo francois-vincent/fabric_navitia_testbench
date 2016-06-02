@@ -7,7 +7,6 @@ from ..test_common.test_kraken import (_test_stop_restart_kraken,
                                        _test_stop_start_apache,
                                        _test_test_kraken_nowait_nofail,
                                        )
-
 from ..utils import get_running_krakens
 
 
@@ -192,7 +191,7 @@ def test_redeploy_kraken_swap(duplicated, capsys):
 
     # change zmq_server to other eng machine
     add_instance('toto', 'passwd', zmq_socket_port=30004, zmq_server=fabric.env.host2_ip)
-    # TODO fix that, it freezes !
+    # TODO fix that, it freezes ! (paramiko bug)
     # with fabric.set_call_tracker('component.kraken.create_eng_instance',
     #                              'component.kraken.remove_kraken_instance') as data:
     #     value, exception, stdout, stderr = fabric.execute_forked('redeploy_kraken', 'toto')
@@ -225,7 +224,7 @@ def test_redeploy_kraken_reduce(duplicated, capsys):
 
     # change zmq_server to other eng machine
     add_instance('toto', 'passwd', zmq_socket_port=30004, zmq_server=fabric.env.host2_ip)
-    # TODO fix that, it freezes !
+    # TODO fix that, it freezes ! (paramiko bug)
     # with fabric.set_call_tracker('component.kraken.create_eng_instance',
     #                              'component.kraken.remove_kraken_instance') as data:
     #     value, exception, stdout, stderr = fabric.execute_forked('redeploy_kraken', 'toto')
