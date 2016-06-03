@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from fabric.api import env
 
+# set PYTHONPATH to fabric_navitia
 from fabfile.env.platforms import use
 
 from . import skipifdev
@@ -41,6 +42,7 @@ def test_prod_setup():
     for instance in env.instances.itervalues():
         assert instance.zmq_server == env.zmq_server
     kc = KrakenCounter(env.instances, env.eng_hosts, env.eng_hosts[:2], env.eng_hosts[2:])
+    # check distribution of krakens among engines: 0=all engines, 1=pool 1, 2=pool 2
     assert kc[0] == 65
     assert kc[1] == 1
     assert kc[2] == 1
@@ -56,6 +58,7 @@ def test_pre_setup():
     for instance in env.instances.itervalues():
         assert instance.zmq_server == env.zmq_server
     kc = KrakenCounter(env.instances, env.eng_hosts, env.roledefs['eng'][:1], env.roledefs['eng'][1:])
+    # check distribution of krakens among engines: 0=all engines, 1=pool 1, 2=pool 2
     assert kc[0] == 0
     assert kc[1] == 33
     assert kc[2] == 34

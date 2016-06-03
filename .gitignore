@@ -1,6 +1,6 @@
 *.pyc
-.log
-.deb
+*.log
+*.deb
 
 .idea/
 .cache/
