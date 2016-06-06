@@ -43,4 +43,6 @@
 
 #33 refactor and relocate and selftest class ProcessProxy
 
-#34 allow to replace a task via call_tracker
+#34 allow to replace a task via call_tracker (via **kwargs)
+
+#35 faire fonctionner une plateforme avec 2 jormun
