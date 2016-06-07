@@ -10,7 +10,7 @@ from ..test_common.test_kraken import (_test_stop_restart_kraken,
 from ..utils import get_running_krakens
 
 
-SHOW_CALL_TRACKER_DATA = True
+SHOW_CALL_TRACKER_DATA = False
 nominal_krakens = {'host1': {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'},
                    'host2': {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'}}
 krakens_after_stop = {'host1': {'fr-nw', 'fr-npdc', 'fr-idf', 'fr-cen'},
@@ -151,8 +151,8 @@ def test_create_remove_eng_instance(duplicated):
     assert set(get_running_krakens(platform, 'host2')) == nominal_krakens['host2']
 
 
-@skipifdev
-def test_restart_all_krakens(duplicated):
+# @skipifdev
+def test_restart_all_krakens_alternate(duplicated):
     platform, fabric = duplicated
 
     fabric.env.excluded_instances = ['us-wa', 'fr-nw']
@@ -245,7 +245,7 @@ def test_redeploy_kraken_reduce(duplicated, capsys):
     assert set(get_running_krakens(platform, 'host2')) == {'toto'} | nominal_krakens['host2']
 
 
-# @skipifdev
+@skipifdev
 def test_redeploy_all_krakens(duplicated, capsys):
     platform, fabric = duplicated
 
