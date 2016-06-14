@@ -22,7 +22,6 @@ import fabfile
 
 import utils
 
-global_env_copy = defaultdict(list)
 ROOT = os.path.basename(os.path.dirname(__file__))
 fabric_navitia_path = os.path.dirname(os.path.dirname(fabfile.__file__))
 
@@ -188,8 +187,6 @@ class FabricManager(object):
             setattr(self.env, k, v)
         # wait sshd daemons running on host platform
         self.platform.wait_process('/usr/sbin/sshd')
-        # if not global_env_copy[self.platform.platform_name]:
-        #     global_env_copy[self.platform.platform_name].extend([_AttributeDict(api.env), dict(api.env.instances)])
         # save and replace all references to fabric.api.env
         self.org_api_env = pyjack.replace_all_refs(api.env, _AttributeDict(api.env))
         self.org_instances = pyjack.replace_all_refs(api.env.instances, dict(api.env.instances))
