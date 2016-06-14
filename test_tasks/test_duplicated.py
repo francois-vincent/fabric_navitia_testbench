@@ -10,7 +10,6 @@ from ..utils import get_running_krakens
 
 ROOTDIR = os.path.dirname(os.path.abspath(__file__))
 
-SHOW_CALL_TRACKER_DATA = False
 instances_names = {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'}
 
 
@@ -27,10 +26,6 @@ def test_upgrade_kraken(duplicated):
 
     assert exception is None
     assert stderr == ''
-    if SHOW_CALL_TRACKER_DATA:
-        from pprint import pprint
-        pprint(dict(data()))
-
     # upgrades apply on both machines
     assert len(data()['upgrade_engine_packages']) == 2
     assert len(data()['upgrade_monitor_kraken_packages']) == 2
@@ -55,10 +50,6 @@ def test_upgrade_kraken_restricted(duplicated):
                                  'component.kraken.require_monitor_kraken_started') as data:
         fabric.execute_forked(
             'tasks.upgrade_kraken', kraken_wait=False, up_confs=False, supervision=False)
-
-    if SHOW_CALL_TRACKER_DATA:
-        from pprint import pprint
-        pprint(dict(data()))
 
     # upgrades apply only on restricted pool
     assert len(data()['upgrade_engine_packages']) == 1
@@ -92,10 +83,6 @@ def test_upgrade_all_load_balancer(duplicated):
 
     assert exception is None
     assert stderr == ''
-    if SHOW_CALL_TRACKER_DATA:
-        from pprint import pprint
-        pprint(dict(data()))
-
     assert stdout.count("Executing task 'stop_tyr_beat'") == 1
     assert stdout.count("Executing task 'start_tyr_beat'") == 1
     # 1 call to component.load_balancer.disable_node by reload_jormun_safe()
@@ -126,15 +113,6 @@ def test_remove_instance(duplicated):
 
     # postgres is really long to warm up !
     time.sleep(15)
-
-    # update instance model and resource, load and execute migration (before merge of Navitia2 PR)
-    # platform.scp('/home/francois/CanalTP/navitia/source/navitiacommon/navitiacommon/models.py',
-    #              '/usr/lib/python2.7/dist-packages/navitiacommon/', 'host1')
-    # platform.scp('/home/francois/CanalTP/navitia/source/tyr/migrations/versions/d1d12707b76_add_discarded_instance.py',
-    #              '/usr/share/tyr/migrations/versions/', 'host1')
-    # platform.scp('/home/francois/CanalTP/navitia/source/tyr/tyr/resources.py',
-    #              '/usr/lib/python2.7/dist-packages/tyr/', 'host1')
-    # platform.docker_exec('/bin/sh -c "cd /srv/tyr && TYR_CONFIG_FILE=/srv/tyr/settings.py python manage.py db upgrade"', 'host1')
 
     # set up a server for tyr API on host1 and start it
     platform.scp(os.path.join(ROOTDIR, 'tyr-api.conf'), '/etc/apache2/conf-enabled/tyr-api.conf', 'host1')
@@ -170,7 +148,7 @@ def test_upgrade_engine_packages(duplicated):
     assert platform.path_exists('/usr/bin/kraken.old')
 
 
-# @skipifdev
+@skipifdev
 def test_rollback_kraken(duplicated):
     platform, fabric = duplicated
 

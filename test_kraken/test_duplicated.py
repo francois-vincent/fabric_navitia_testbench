@@ -10,7 +10,6 @@ from ..test_common.test_kraken import (_test_stop_restart_kraken,
 from ..utils import get_running_krakens
 
 
-SHOW_CALL_TRACKER_DATA = True
 nominal_krakens = {'host1': {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'},
                    'host2': {'us-wa', 'fr-nw', 'fr-npdc', 'fr-ne-amiens', 'fr-idf', 'fr-cen'}}
 krakens_after_stop = {'host1': {'fr-nw', 'fr-npdc', 'fr-idf', 'fr-cen'},
@@ -111,7 +110,7 @@ def test_check_dead_instances(duplicated):
            'Found 12 dead instances out of 6.' in stdout
 
 
-@skipifdev
+# @skipifdev
 def test_create_remove_eng_instance(duplicated):
     platform, fabric = duplicated
     fabric.get_object('instance.add_instance')('toto', 'passwd',
@@ -120,9 +119,6 @@ def test_create_remove_eng_instance(duplicated):
     with fabric.set_call_tracker('component.kraken.update_eng_instance_conf') as data:
         value, exception, stdout, stderr = fabric.execute_forked('create_eng_instance', 'toto')
 
-    if SHOW_CALL_TRACKER_DATA:
-        from pprint import pprint
-        pprint(dict(data()))
     # there is only one call to update_eng_instance_conf
     assert len(data()['update_eng_instance_conf']) == 2
     host1_string = 'root@{}'.format(platform.get_hosts()['host1'])
@@ -151,7 +147,7 @@ def test_create_remove_eng_instance(duplicated):
     assert set(get_running_krakens(platform, 'host2')) == nominal_krakens['host2']
 
 
-@skipifdev
+# @skipifdev
 def test_restart_all_krakens_alternate(duplicated):
     platform, fabric = duplicated
 
@@ -160,9 +156,6 @@ def test_restart_all_krakens_alternate(duplicated):
                                  'component.kraken.restart_kraken_on_host') as data:
         value, exception, stdout, stderr = fabric.execute_forked('component.kraken.restart_all_krakens', wait=False)
 
-    if SHOW_CALL_TRACKER_DATA:
-        from pprint import pprint
-        pprint(dict(data()))
     assert len(data()['require_monitor_kraken_started']) == 2
     # call to restart_kraken is not dependant on env.excluded_instances
     # every kraken must be restarted
@@ -213,7 +206,7 @@ def test_redeploy_kraken_swap(duplicated, capsys):
     assert set(get_running_krakens(platform, 'host2')) == {'toto'} | nominal_krakens['host2']
 
 
-@skipifdev
+# @skipifdev
 def test_redeploy_kraken_reduce(duplicated, capsys):
     platform, fabric = duplicated
     add_instance = fabric.get_object('instance.add_instance')
@@ -245,7 +238,7 @@ def test_redeploy_kraken_reduce(duplicated, capsys):
     assert set(get_running_krakens(platform, 'host2')) == {'toto'} | nominal_krakens['host2']
 
 
-@skipifdev
+# @skipifdev
 def test_redeploy_all_krakens(duplicated):
     platform, fabric = duplicated
 
