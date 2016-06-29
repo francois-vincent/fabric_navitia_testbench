@@ -105,7 +105,7 @@ def test_update_eng_instance_conf_distributed(distributed_undeployed):
     assert platform.path_exists('/etc/init.d/kraken_fr-cen', 'host1', negate=True)
 
 
-# @skipifdev
+@skipifdev
 def test_swap_data_nav(duplicated_undeployed):
     platform, fabric = duplicated_undeployed
 

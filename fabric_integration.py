@@ -29,13 +29,6 @@ with utils.cd(fabric_navitia_path):
     fabric_tasks = utils.Command('fab no_such_task').stdout_column(0, 2)
 
 
-# LOG_PARAMIKO = 'paramiko.log'
-LOG_PARAMIKO = None
-if LOG_PARAMIKO:
-    import paramiko
-    paramiko.util.log_to_file(LOG_PARAMIKO)
-
-
 def get_fabric_task(task):
     fab_task = []
     for x in fabric_tasks:
@@ -185,7 +178,7 @@ class FabricManager(object):
         self.platform.user = getattr(self.env, 'default_ssh_user', 'root')
         for k, v in write.iteritems():
             setattr(self.env, k, v)
-        # wait sshd daemons running on host platform
+        # wait sshd daemon running on host platform
         self.platform.wait_process('/usr/sbin/sshd')
         # save and replace all references to fabric.api.env
         self.org_api_env = pyjack.replace_all_refs(api.env, _AttributeDict(api.env))

@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import os.path
 import time
 
 from ..test_common import skipifdev
@@ -28,23 +29,76 @@ def test_kraken_setup(duplicated):
 
 
 @skipifdev
-def test_stop_restart_single_kraken(duplicated):
-    _test_stop_restart_kraken(duplicated,
-                             map_start=nominal_krakens,
-                             map_stop=krakens_after_stop,
-                             stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
-                             start_pat=('component.kraken.restart_kraken', ('us-wa', 'fr-ne-amiens'), dict(test=False))
-                             )
+def test_stop_restart_single_kraken_serial(duplicated):
+    _, fabric = duplicated
+    with fabric.set_call_tracker('-component.kraken.test_kraken') as data:
+        _test_stop_restart_kraken(duplicated,
+                                 map_start=nominal_krakens,
+                                 map_stop=krakens_after_stop,
+                                 stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                                 start_pat=('component.kraken.restart_kraken', ('us-wa', 'fr-ne-amiens'),
+                                            dict(wait='serial'))
+                                 )
+    # test_kraken is called once for each pair (coverage, server)
+    assert len(data()['test_kraken']) == 4
+
+
+@skipifdev
+def test_stop_restart_single_kraken_parallel(duplicated):
+    _, fabric = duplicated
+    with fabric.set_call_tracker('-component.kraken.test_kraken') as data:
+        _test_stop_restart_kraken(duplicated,
+                                 map_start=nominal_krakens,
+                                 map_stop=krakens_after_stop,
+                                 stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                                 start_pat=('component.kraken.restart_kraken', ('us-wa', 'fr-ne-amiens'),
+                                            dict(wait='parallel'))
+                                 )
+    # test_kraken is called once per coverage
+    assert len(data()['test_kraken']) == 2
+
+
+@skipifdev
+def test_stop_restart_single_kraken_nowait1(duplicated):
+    _, fabric = duplicated
+    with fabric.set_call_tracker('component.kraken.test_kraken') as data:
+        _test_stop_restart_kraken(duplicated,
+                                 map_start=nominal_krakens,
+                                 map_stop=krakens_after_stop,
+                                 stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                                 start_pat=('component.kraken.restart_kraken', ('us-wa', 'fr-ne-amiens'),
+                                            dict(wait='false'))
+                                 )
+    assert len(data()['test_kraken']) == 0
+
+
+@skipifdev
+def test_stop_restart_single_kraken_nowait2(duplicated):
+    _, fabric = duplicated
+    with fabric.set_call_tracker('component.kraken.test_kraken') as data:
+        _test_stop_restart_kraken(duplicated,
+                                 map_start=nominal_krakens,
+                                 map_stop=krakens_after_stop,
+                                 stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                                 start_pat=('component.kraken.restart_kraken', ('us-wa', 'fr-ne-amiens'),
+                                            dict(wait=None))
+                                 )
+    assert len(data()['test_kraken']) == 0
 
 
 @skipifdev
 def test_restart_all_krakens(duplicated):
-    _test_stop_restart_kraken(duplicated,
-                             map_start=nominal_krakens,
-                             map_stop=krakens_after_stop,
-                             stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
-                             start_pat=('restart_all_krakens', (), dict(wait=False))
-                             )
+    _, fabric = duplicated
+    with fabric.set_call_tracker('component.kraken.test_kraken',
+                                 'component.kraken.restart_kraken') as data:
+        _test_stop_restart_kraken(duplicated,
+                                 map_start=nominal_krakens,
+                                 map_stop=krakens_after_stop,
+                                 stop_pat=('stop_kraken', ('us-wa', 'fr-ne-amiens')),
+                                 start_pat=('restart_all_krakens', (), dict(wait=False))
+                                 )
+    assert len(data()['restart_kraken']) == len(fabric.env.instances)
+    assert len(data()['test_kraken']) == 0
 
 
 @skipifdev
@@ -110,7 +164,7 @@ def test_check_dead_instances(duplicated):
            'Found 12 dead instances out of 6.' in stdout
 
 
-# @skipifdev
+@skipifdev
 def test_create_remove_eng_instance(duplicated):
     platform, fabric = duplicated
     fabric.get_object('instance.add_instance')('toto', 'passwd',
@@ -147,33 +201,26 @@ def test_create_remove_eng_instance(duplicated):
     assert set(get_running_krakens(platform, 'host2')) == nominal_krakens['host2']
 
 
-# @skipifdev
+@skipifdev
 def test_restart_all_krakens_alternate(duplicated):
     platform, fabric = duplicated
 
     fabric.env.excluded_instances = ['us-wa', 'fr-nw']
     with fabric.set_call_tracker('component.kraken.require_monitor_kraken_started',
-                                 'component.kraken.restart_kraken_on_host') as data:
-        value, exception, stdout, stderr = fabric.execute_forked('component.kraken.restart_all_krakens', wait=False)
+                                 '-component.kraken.restart_kraken_on_host',
+                                 '-component.kraken.test_kraken') as data:
+        value, exception, stdout, stderr = fabric.execute_forked('component.kraken.restart_all_krakens')
 
     assert len(data()['require_monitor_kraken_started']) == 2
     # call to restart_kraken is not dependant on env.excluded_instances
     # every kraken must be restarted
-    assert len(data()['restart_kraken_on_host']) == 12
+    assert len(data()['restart_kraken_on_host']) == 2 * len(fabric.env.instances)
 
-    host1 = platform.get_hosts()['host1']
-    host2 = platform.get_hosts()['host2']
     for instance in fabric.env.excluded_instances:
-        assert stdout.count("{} has no data, not testing it".format(instance)) == 1
-    for instance in set(fabric.env.instances).difference(fabric.env.excluded_instances):
-        assert stdout.count('calling : http://{}:80/monitor-kraken/?instance={}'
-                            .format(host1, instance)) == 1
-        assert stdout.count('calling : http://{}:80/monitor-kraken/?instance={}'
-                            .format(host2, instance)) == 1
-        assert stdout.count('OK: instance {} has correct values:'.format(instance)) == 2
+        assert stdout.count("Coverage '{}' has no data, not testing it".format(instance)) == 1
 
 
-# @skipifdev
+@skipifdev
 def test_redeploy_kraken_swap(duplicated, capsys):
     platform, fabric = duplicated
     add_instance = fabric.get_object('instance.add_instance')
@@ -221,7 +268,7 @@ def test_redeploy_kraken_reduce(duplicated, capsys):
     # with fabric.set_call_tracker('component.kraken.create_eng_instance',
     #                              'component.kraken.remove_kraken_instance') as data:
     #     value, exception, stdout, stderr = fabric.execute_forked('redeploy_kraken', 'toto')
-    fabric.execute('redeploy_kraken', 'toto')
+    fabric.execute('redeploy_kraken', 'toto', create=False)
     stdout, stderr = capsys.readouterr()
 
     assert 'INFO: kraken toto instance is running on {}'.format(platform.get_hosts()['host2']) in stdout
@@ -238,7 +285,7 @@ def test_redeploy_kraken_reduce(duplicated, capsys):
     assert set(get_running_krakens(platform, 'host2')) == {'toto'} | nominal_krakens['host2']
 
 
-# @skipifdev
+@skipifdev
 def test_redeploy_all_krakens(duplicated):
     platform, fabric = duplicated
 
@@ -249,3 +296,47 @@ def test_redeploy_all_krakens(duplicated):
     for instance in fabric.env.instances:
         assert 'INFO: kraken {} instance is running on {}'.format(instance, host1) in stdout
         assert 'INFO: kraken {} instance is running on {}'.format(instance, host2) in stdout
+
+
+@skipifdev
+def test_upgrade_engine_packages(duplicated):
+    platform, fabric = duplicated
+
+    value, exception, stdout, stderr = fabric.execute_forked('upgrade_engine_packages')
+    assert exception is None
+    assert stderr == ''
+
+    assert platform.path_exists('/usr/bin/kraken')
+    assert platform.path_exists('/usr/bin/kraken.old')
+
+
+@skipifdev
+def test_rollback_instance(duplicated):
+    platform, fabric = duplicated
+
+    # prepare required folder and files before test
+    platform.docker_exec("mkdir -p /srv/ed/data/us-wa/temp")
+    plain_target = fabric.env.instances['us-wa'].target_lz4_file
+    temp_target = os.path.join(os.path.dirname(plain_target), 'temp', os.path.basename(plain_target))
+    # create temp target before plain target
+    platform.put_data('old', plain_target, 'host1')
+    time.sleep(1)
+    platform.put_data('new', temp_target, 'host1')
+
+    for instance in fabric.env.instances:
+        assert platform.docker_exec('readlink /srv/kraken/{}/kraken'.format(instance), 'host1') == '/usr/bin/kraken'
+        assert platform.docker_exec('readlink /srv/kraken/{}/kraken'.format(instance), 'host2') == '/usr/bin/kraken'
+
+    # we don't want to actually restart the kraken under test
+    with fabric.set_call_tracker('-component.kraken.restart_kraken') as data:
+        value, exception, stdout, stderr = fabric.execute_forked('rollback_instance', 'us-wa')
+    assert exception is None
+    assert stderr == ''
+
+    assert len(data()['restart_kraken']) == 1
+    # link to executable has been changed to old binary
+    assert platform.docker_exec('readlink /srv/kraken/us-wa/kraken', 'host1') == '/usr/bin/kraken.old'
+    assert platform.docker_exec('readlink /srv/kraken/us-wa/kraken', 'host2') == '/usr/bin/kraken.old'
+    # data has been exchanged as expected
+    assert platform.get_data(temp_target, 'host1') == 'old'
+    assert platform.get_data(plain_target, 'host1') == 'new'
